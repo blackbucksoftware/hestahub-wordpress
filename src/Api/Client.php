@@ -95,8 +95,13 @@ final class Client {
 		$fetched['fetched_at'] = $now;
 		$fetched['tenant']     = $tenant;
 		if ( $fetched['stale_ttl'] > 0 ) {
+			// An option, not a transient: a persistent object cache may evict a
+			// transient early, and the contract says to keep a body until
+			// stale_ttl. cached() enforces the expiry.
+			update_option( $this->cache_key( $endpoint ), $fetched, false );
+		} else {
 			// The body says how long to keep it. Without that, keep nothing.
-			set_transient( $this->cache_key( $endpoint ), $fetched, $fetched['stale_ttl'] );
+			delete_option( $this->cache_key( $endpoint ) );
 		}
 		return $this->result( $fetched, false, $state, 0 );
 	}
@@ -129,7 +134,7 @@ final class Client {
 	public function flush(): void {
 		$tenant = $this->credentials->tenant();
 		foreach ( self::ENDPOINTS as $endpoint ) {
-			delete_transient( $this->cache_key( $endpoint ) );
+			delete_option( $this->cache_key( $endpoint ) );
 			EndpointState::load( $endpoint, $tenant )->retry_now();
 		}
 	}
@@ -196,7 +201,7 @@ final class Client {
 	 * @param int    $now      The current time.
 	 */
 	private function cached( string $endpoint, string $tenant, int $now ): ?array {
-		$cached = get_transient( $this->cache_key( $endpoint ) );
+		$cached = get_option( $this->cache_key( $endpoint ) );
 		if ( ! is_array( $cached ) || ! isset( $cached['data'], $cached['ttl'], $cached['stale_ttl'], $cached['fetched_at'], $cached['tenant'] ) ) {
 			return null;
 		}

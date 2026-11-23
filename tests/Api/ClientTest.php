@@ -171,6 +171,24 @@ final class ClientTest extends WP_UnitTestCase {
 		$this->assertSame( $kind, $result->failure()->kind() );
 	}
 
+	public function test_the_copy_survives_an_object_cache_eviction() {
+		$was_external = wp_using_ext_object_cache( true );
+		try {
+			$this->respond( 200, $this->example( 'apartments' ) );
+			$this->client()->get( 'apartments' );
+			wp_cache_flush(); // A persistent object cache may evict anything at any time.
+			$this->respond( 500 );
+
+			$this->now += 6 * HOUR_IN_SECONDS;
+			$result = $this->client()->get( 'apartments' );
+		} finally {
+			wp_using_ext_object_cache( $was_external );
+		}
+
+		$this->assertTrue( $result->is_ok(), 'The contract: keep a body until stale_ttl.' );
+		$this->assertTrue( $result->is_stale() );
+	}
+
 	public function test_past_stale_ttl_a_failure_returns_the_failure() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 		$this->client()->get( 'apartments' );
