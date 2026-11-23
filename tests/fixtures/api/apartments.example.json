@@ -1,0 +1,98 @@
+{
+  "data": [
+    {
+      "slug": "hoettur",
+      "name": "Höttur",
+      "description": "Gemütliche Wohnung unter dem Dach der alten Scheune.",
+      "building": {
+        "key": "alte-scheune",
+        "name": "Alte Scheune",
+        "position": 1
+      },
+      "qm": 58,
+      "max_persons": 4,
+      "features": [
+        "Zwei Schlafzimmer",
+        "Voll ausgestattete Küche",
+        "Terrasse mit Blick auf die Koppeln"
+      ],
+      "images": [
+        {
+          "url": "https://kronshof.hestahub.com/includes/assets/tenants/kronshof/apartments/7f3c/wohnzimmer.jpg",
+          "caption": "Wohnzimmer",
+          "is_primary": true
+        },
+        {
+          "url": "https://kronshof.hestahub.com/includes/assets/tenants/kronshof/apartments/7f3c/kueche.jpg",
+          "caption": null,
+          "is_primary": false
+        }
+      ],
+      "blueprint": "https://kronshof.hestahub.com/includes/assets/tenants/kronshof/apartments/7f3c/grundriss.png",
+      "pricing": {
+        "seasons": [
+          {
+            "key": "nebensaison",
+            "name": "Nebensaison",
+            "is_default": true,
+            "periods": [],
+            "tiers": [
+              {
+                "name": null,
+                "min_nights": 3,
+                "max_nights": 6,
+                "price_per_night": "95.00",
+                "final_cleaning_fee": "45.00"
+              },
+              {
+                "name": null,
+                "min_nights": 7,
+                "max_nights": null,
+                "price_per_night": "85.00",
+                "final_cleaning_fee": "45.00"
+              }
+            ],
+            "bundles": [
+              {
+                "name": "Wochenendpauschale",
+                "nights": 2,
+                "total_price": "295.00",
+                "description": "Freitag, 15 Uhr, bis Sonntag, 17 Uhr",
+                "final_cleaning_fee": "45.00"
+              }
+            ]
+          },
+          {
+            "key": "hauptsaison",
+            "name": "Hauptsaison",
+            "is_default": false,
+            "periods": [
+              {
+                "first_day": "2027-06-26",
+                "last_day": "2027-08-28"
+              }
+            ],
+            "tiers": [
+              {
+                "name": null,
+                "min_nights": 7,
+                "max_nights": null,
+                "price_per_night": "115.00",
+                "final_cleaning_fee": "45.00"
+              }
+            ],
+            "bundles": []
+          }
+        ]
+      },
+      "portal_url": null
+    }
+  ],
+  "revision": "2026-11-23",
+  "cache": {
+    "ttl": 21600,
+    "stale_ttl": 604800
+  },
+  "currency": "EUR",
+  "prices_include_tax": true
+}

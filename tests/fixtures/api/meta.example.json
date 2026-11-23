@@ -1,0 +1,30 @@
+{
+  "data": {
+    "version": "v1",
+    "status": "current",
+    "revision": "2026-11-23",
+    "sunset": null,
+    "tenant": {
+      "name": "Kronshof"
+    },
+    "resources": [
+      "apartments",
+      "clinics"
+    ],
+    "endpoints": [
+      "/api/v1/meta",
+      "/api/v1/apartments",
+      "/api/v1/availability",
+      "/api/v1/clinics"
+    ],
+    "deprecations": [],
+    "minimum_plugin_version": "1.0.0",
+    "recommended_plugin_version": "1.0.0",
+    "docs_url": "https://docs.hestahub.com/v1/"
+  },
+  "revision": "2026-11-23",
+  "cache": {
+    "ttl": 43200,
+    "stale_ttl": 604800
+  }
+}

@@ -38,6 +38,13 @@ jobs:
       - run: composer install --no-interaction --no-progress
       - run: composer compat
 
+  schemas:
+    name: Vendored schemas match the published Revision
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: bin/vendor-schemas.sh --check
+
   test:
     name: PHPUnit (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})
     runs-on: ubuntu-latest

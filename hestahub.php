@@ -42,4 +42,9 @@ function hestahub(): \HestaHub\Plugin {
 	return $plugin;
 }
 
+$hestahub_client = new \HestaHub\Api\Client( new \HestaHub\Api\Credentials() );
+hestahub()->add( new \HestaHub\Api\MetaCheck( $hestahub_client ) );
+
+register_deactivation_hook( __FILE__, array( \HestaHub\Api\MetaCheck::class, 'unschedule' ) );
+
 hestahub()->hook();
