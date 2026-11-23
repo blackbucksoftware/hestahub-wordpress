@@ -42,8 +42,12 @@ function hestahub(): \HestaHub\Plugin {
 	return $plugin;
 }
 
-$hestahub_client = new \HestaHub\Api\Client( new \HestaHub\Api\Credentials() );
-hestahub()->add( new \HestaHub\Api\MetaCheck( $hestahub_client ) );
+$hestahub_credentials = new \HestaHub\Api\Credentials();
+$hestahub_client      = new \HestaHub\Api\Client( $hestahub_credentials );
+hestahub()
+	->add( new \HestaHub\I18n( plugin_basename( __FILE__ ) ) )
+	->add( new \HestaHub\Api\MetaCheck( $hestahub_client ) )
+	->add( new \HestaHub\Admin\Settings( $hestahub_client, $hestahub_credentials ) );
 
 register_deactivation_hook( __FILE__, array( \HestaHub\Api\MetaCheck::class, 'unschedule' ) );
 

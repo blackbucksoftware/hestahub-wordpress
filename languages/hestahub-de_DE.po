@@ -1,0 +1,127 @@
+# German translation of HestaHub.
+# This file is distributed under the same license as the HestaHub package.
+msgid ""
+msgstr ""
+"Project-Id-Version: HestaHub\n"
+"Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
+"POT-Creation-Date: 2026-11-23 23:22+0100\n"
+"PO-Revision-Date: 2026-11-23 00:00+0000\n"
+"Last-Translator: Blackbuck Software\n"
+"Language-Team: German\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "HestaHub"
+msgstr "HestaHub"
+
+msgid "The HestaHub address must be your subdomain: the part before .hestahub.com, made of letters, digits and hyphens."
+msgstr "Die HestaHub-Adresse muss deine Subdomain sein: der Teil vor .hestahub.com, aus Buchstaben, Ziffern und Bindestrichen."
+
+msgid "A base path needs pretty permalinks. While permalinks are set to “Plain”, no URL under a base path can work. Choose another structure under Settings → Permalinks first."
+msgstr "Ein Basispfad braucht sprechende Permalinks. Solange die Permalinks auf „Einfach“ stehen, kann keine URL unter einem Basispfad funktionieren. Wähle zuerst unter Einstellungen → Permalinks eine andere Struktur."
+
+msgid "Apartments and Clinics need different base paths."
+msgstr "Ferienwohnungen und Kurse brauchen unterschiedliche Basispfade."
+
+msgid "Sorry, you are not allowed to manage HestaHub."
+msgstr "Du darfst HestaHub leider nicht verwalten."
+
+msgid "Connection"
+msgstr "Verbindung"
+
+msgid "HestaHub address"
+msgstr "HestaHub-Adresse"
+
+msgid "Your HestaHub subdomain."
+msgstr "Deine HestaHub-Subdomain."
+
+msgid "API key"
+msgstr "API-Schlüssel"
+
+msgid "Base paths"
+msgstr "Basispfade"
+
+msgid "Where your Apartments and Clinics appear on this site. Empty until you set one: until then, the plugin owns no URL."
+msgstr "Wo deine Ferienwohnungen und Kurse auf dieser Website erscheinen. Leer, bis du einen festlegst: Bis dahin belegt das Plugin keine URL."
+
+msgid "Maintenance"
+msgstr "Wartung"
+
+msgid "“Refresh now” discards the copies this site keeps, including the one that may be keeping the site up while HestaHub cannot be reached. “Test connection” asks HestaHub directly and changes nothing."
+msgstr "„Jetzt aktualisieren“ verwirft die Kopien, die diese Website vorhält, auch die, die die Website womöglich gerade am Laufen hält, während HestaHub nicht erreichbar ist. „Verbindung testen“ fragt HestaHub direkt und ändert nichts."
+
+msgid "Test connection"
+msgstr "Verbindung testen"
+
+msgid "Refresh now"
+msgstr "Jetzt aktualisieren"
+
+msgid "What this site holds"
+msgstr "Was diese Website vorhält"
+
+msgid "Read from the environment variable HESTAHUB_API_KEY. Change it there."
+msgstr "Aus der Umgebungsvariable HESTAHUB_API_KEY gelesen. Ändere ihn dort."
+
+msgid "Read from the constant HESTAHUB_API_KEY in wp-config.php. Change it there."
+msgstr "Aus der Konstante HESTAHUB_API_KEY in der wp-config.php gelesen. Ändere ihn dort."
+
+msgid "Stored in the database. Leave blank to keep it; enter a new key to replace it."
+msgstr "In der Datenbank gespeichert. Leer lassen, um ihn zu behalten; einen neuen Schlüssel eingeben, um ihn zu ersetzen."
+
+msgid "Not set yet. You can also set it in wp-config.php as the constant HESTAHUB_API_KEY, or as an environment variable of that name."
+msgstr "Noch nicht festgelegt. Du kannst ihn auch in der wp-config.php als Konstante HESTAHUB_API_KEY setzen oder als gleichnamige Umgebungsvariable."
+
+msgid "The base paths can be set once the connection works: HestaHub says which of Apartments and Clinics you have."
+msgstr "Die Basispfade lassen sich festlegen, sobald die Verbindung funktioniert: HestaHub teilt mit, ob du Ferienwohnungen, Kurse oder beides hast."
+
+msgid "HestaHub lists neither Apartments nor Clinics for you."
+msgstr "HestaHub führt für dich weder Ferienwohnungen noch Kurse."
+
+#. translators: %s: link to the Permalinks settings.
+#, php-format
+msgid "Permalinks are set to “Plain”, so no URL under a base path can work. Choose another structure under %s to set a base path."
+msgstr "Die Permalinks stehen auf „Einfach“, daher kann keine URL unter einem Basispfad funktionieren. Wähle unter %s eine andere Struktur, um einen Basispfad festzulegen."
+
+msgid "Settings → Permalinks"
+msgstr "Einstellungen → Permalinks"
+
+msgid "Apartments"
+msgstr "Ferienwohnungen"
+
+msgid "Clinics"
+msgstr "Kurse"
+
+msgid "The cached copies are discarded. The next page view fetches fresh data."
+msgstr "Die zwischengespeicherten Kopien sind verworfen. Der nächste Seitenaufruf holt frische Daten."
+
+msgid "The connection failed."
+msgstr "Die Verbindung ist fehlgeschlagen."
+
+msgid "Enter the HestaHub address and an API key first."
+msgstr "Gib zuerst die HestaHub-Adresse und einen API-Schlüssel ein."
+
+#. translators: %d: HTTP status code.
+#, php-format
+msgid "HestaHub answered with HTTP status %d."
+msgstr "HestaHub hat mit HTTP-Status %d geantwortet."
+
+msgid "Tenant"
+msgstr "Mandant"
+
+msgid "Revision"
+msgstr "Revision"
+
+msgid "Minimum plugin version"
+msgstr "Mindestversion des Plugins"
+
+msgid "The connection works."
+msgstr "Die Verbindung funktioniert."
+
+msgid "None"
+msgstr "Keine"
+
+msgid "Nothing yet."
+msgstr "Noch nichts."

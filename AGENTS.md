@@ -23,13 +23,14 @@ The plugin is a **tolerant reader**: it reads field by field, ignores unknown ke
 
 ## Commands
 
-Needs PHP, Composer and a MySQL or MariaDB server.
+Needs PHP, Composer, gettext and a MySQL or MariaDB server.
 
 - **Install:** `composer install`, then `bin/install-wp-tests.sh <db-name> <db-user> <db-pass> [db-host] [wp-version]` once. It puts WordPress and its test suite in `.wp-tests/` and creates the database. `wp-version` is `latest` or a release such as `6.8`.
 - **Test:** `composer test` (PHPUnit with the WordPress test suite); `WP_MULTISITE=1 composer test` for multisite. The suite caps PHPUnit at 9, and `composer.lock` is resolved for PHP 7.4: update dependencies with `composer update`, never by hand.
 - **Lint and compatibility:** `composer lint` (syntax) and `composer compat` (PHPCompatibility, `testVersion 7.4-`).
 - **Build:** `bin/build-zip.sh [tag]` writes `build/hestahub-<version>.zip`. The version must agree in `hestahub.php`, `Plugin::VERSION` and the `readme.txt` Stable tag, and match the tag if one is given. With a tag it also writes `build/hestahub.json`, the update manifest. Pushing a `v*` tag runs CI, then the same script, and attaches the zip and the manifest to a GitHub Release.
 - **Contract schemas:** `bin/vendor-schemas.sh [revision]` vendors the schemas and examples into `tests/fixtures/api/` (default: `Client::REVISION`). `bin/vendor-schemas.sh --check` fails if they differ from the published ones; CI runs it. Raising `Client::REVISION` means re-vendoring in the same change.
+- **Translations:** every string is in the `hestahub` text domain. After changing strings, `bin/i18n.sh` regenerates `languages/hestahub.pot` and merges it into each `languages/hestahub-<locale>.po`; translate what is new or fuzzy. `bin/i18n.sh --check` fails on a stale `.pot` or an incomplete `.po`; CI runs it. The build compiles the `.mo` files; they are never committed.
 - **wordpress.org build:** `bin/build-zip.sh --wporg` leaves out the update channel (`updates.php`, `lib/plugin-update-checker/`, the `Update URI` header).
 - **Update the vendored update checker:** `bin/vendor-update-checker.sh <tag>` replaces `lib/plugin-update-checker/` with that release. The pinned tag is in its `VERSION` file.
 

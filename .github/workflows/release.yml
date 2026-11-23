@@ -20,6 +20,7 @@ jobs:
         with:
           php-version: '7.4'
           coverage: none
+      - run: sudo apt-get install -y gettext
       - name: Build the zip and the update manifest
         run: bin/build-zip.sh "$GITHUB_REF_NAME"
       - name: Publish the GitHub Release

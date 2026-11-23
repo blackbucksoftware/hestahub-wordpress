@@ -67,6 +67,7 @@ function add_action( $hook ) { $GLOBALS['hestahub_hooks'][] = $hook; return true
 function add_filter( $hook ) { $GLOBALS['hestahub_hooks'][] = $hook; return true; }
 function register_activation_hook( $file, $callback ) { add_action( 'activate_hestahub' ); }
 function register_deactivation_hook( $file, $callback ) { add_action( 'deactivate_hestahub' ); }
+function plugin_basename( $file ) { return 'hestahub/' . basename( $file ); }
 require $argv[1];
 $update = '/update|puc/i';
 echo json_encode( array(

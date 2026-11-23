@@ -2,3 +2,4 @@
 /build/
 /.wp-tests/
 /.phpunit.result.cache
+/languages/*.mo
