@@ -12,7 +12,7 @@ use WP_UnitTestCase;
 final class PluginTest extends WP_UnitTestCase {
 
 	public function test_features_register_when_plugins_loaded_fires() {
-		$plugin  = new Plugin( dirname( __DIR__ ) . '/hestahub.php' );
+		$plugin  = new Plugin();
 		$feature = new RecordingFeature();
 		$plugin->add( $feature );
 		$plugin->hook();
@@ -25,7 +25,7 @@ final class PluginTest extends WP_UnitTestCase {
 	}
 
 	public function test_features_register_only_once() {
-		$plugin  = new Plugin( dirname( __DIR__ ) . '/hestahub.php' );
+		$plugin  = new Plugin();
 		$feature = new RecordingFeature();
 		$plugin->add( $feature );
 		$plugin->hook();

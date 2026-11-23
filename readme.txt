@@ -23,9 +23,9 @@ What the plugin must do, and how it talks to HestaHub, is defined by the HestaHu
 This plugin connects to the HestaHub Public Tenant API, a service run by HestaHub. It needs it to show your Apartments, availability and Clinics.
 
 * **Where:** your own Tenant's host, `https://<tenant>.hestahub.com/api/v1/`. No other host is contacted.
-* **When:** from your server, when its cached copy is due for a refresh, and when an administrator tests the connection or refreshes it from the settings screen. Visitors' browsers never contact HestaHub through this plugin.
-* **What is fetched:** your Tenant's name, its Apartments with their descriptions, pictures and rates, their availability as anonymous date ranges, and your Clinics. No Guest, booking or personal data is fetched.
-* **What is sent:** nothing besides your API key (as `Authorization: Bearer`) and a `User-Agent` header naming the plugin's, WordPress's and PHP's versions. No visitor data and no site URL are sent.
+* **When:** from your server, when its cached copy is due for a refresh. Visitors' browsers never contact HestaHub through this plugin.
+* **What is fetched:** your Tenant's name and details about the API itself (its Revision and which plugin versions it supports), its Apartments with their descriptions, pictures and rates, their availability as anonymous date ranges, and your Clinics. No Guest, booking or personal data is fetched.
+* **What is sent:** nothing besides your API key (as `Authorization: Bearer`) and a `User-Agent` header naming the plugin's, WordPress's and PHP's versions. No visitor data and no site URL are sent. HestaHub stores the `User-Agent` against your key, to decide when the plugin's minimum PHP version may rise.
 
 The contract: https://docs.hestahub.com/v1/
 

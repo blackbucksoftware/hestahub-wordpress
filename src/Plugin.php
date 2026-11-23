@@ -17,13 +17,6 @@ final class Plugin {
 	const VERSION = '0.1.0';
 
 	/**
-	 * Absolute path to hestahub.php.
-	 *
-	 * @var string
-	 */
-	private $file;
-
-	/**
 	 * @var Feature[]
 	 */
 	private $features = array();
@@ -32,20 +25,6 @@ final class Plugin {
 	 * @var bool
 	 */
 	private $booted = false;
-
-	/**
-	 * @param string $file Absolute path to hestahub.php.
-	 */
-	public function __construct( string $file ) {
-		$this->file = $file;
-	}
-
-	/**
-	 * Absolute path to hestahub.php.
-	 */
-	public function file(): string {
-		return $this->file;
-	}
 
 	/**
 	 * Adds a feature to be registered on plugins_loaded.

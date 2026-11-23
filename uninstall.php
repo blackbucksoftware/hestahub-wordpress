@@ -1,13 +1,16 @@
 <?php
 /**
- * Removes everything the plugin stored: options, transients and site
- * transients whose names start with "hestahub_", on every site of a network.
+ * Removes everything the plugin stored: every option, transient and site
+ * transient whose name starts with "hestahub_", on every site of a network.
+ *
+ * Transients stored in the database are rows like any option
+ * ("_transient_hestahub_…", "_transient_timeout_hestahub_…"), so deleting the
+ * rows by name removes them, their timeouts and any orphans alike.
+ * Transients held only in a persistent object cache never reach the database
+ * and cannot be listed here; they expire on their own.
  *
  * WordPress loads only this file on uninstall, so it must not use the
  * autoloader or anything under src/.
- *
- * Transients held only in a persistent object cache never reach the database
- * and cannot be listed here; they expire on their own.
  *
  * @package HestaHub
  */
@@ -15,59 +18,45 @@
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 /**
- * Deletes the plugin's options and transients from the current site's options table.
+ * Names in a table column that belong to the plugin.
+ *
+ * @param string $table  Table name.
+ * @param string $column Column holding the names.
+ * @return string[]
  */
-function hestahub_uninstall_site() {
+function hestahub_uninstall_names( $table, $column ) {
 	global $wpdb;
 
-	$prefixes = array( 'hestahub_', '_transient_hestahub_', '_site_transient_hestahub_' );
-	$where    = implode( ' OR ', array_fill( 0, count( $prefixes ), 'option_name LIKE %s' ) );
-	$likes    = array_map(
-		static function ( $prefix ) use ( $wpdb ) {
-			return $wpdb->esc_like( $prefix ) . '%';
-		},
-		$prefixes
+	$prefixes = array(
+		'hestahub_',
+		'_transient_hestahub_',
+		'_transient_timeout_hestahub_',
+		'_site_transient_hestahub_',
+		'_site_transient_timeout_hestahub_',
 	);
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	$names = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE {$where}", $likes ) );
-
-	foreach ( $names as $name ) {
-		if ( 0 === strpos( $name, '_site_transient_' ) ) {
-			// Single site keeps site transients in the options table.
-			delete_site_transient( substr( $name, strlen( '_site_transient_' ) ) );
-		} elseif ( 0 === strpos( $name, '_transient_' ) ) {
-			delete_transient( substr( $name, strlen( '_transient_' ) ) );
-		} else {
-			delete_option( $name );
-		}
+	$where = implode( ' OR ', array_fill( 0, count( $prefixes ), "{$column} LIKE %s" ) );
+	$likes = array();
+	foreach ( $prefixes as $prefix ) {
+		$likes[] = $wpdb->esc_like( $prefix ) . '%';
 	}
+
+	return $wpdb->get_col( $wpdb->prepare( "SELECT {$column} FROM {$table} WHERE {$where}", $likes ) );
 }
 
 if ( is_multisite() ) {
 	foreach ( get_sites( array( 'fields' => 'ids', 'number' => 0 ) ) as $hestahub_site_id ) {
 		switch_to_blog( $hestahub_site_id );
-		hestahub_uninstall_site();
+		foreach ( hestahub_uninstall_names( $GLOBALS['wpdb']->options, 'option_name' ) as $hestahub_name ) {
+			delete_option( $hestahub_name );
+		}
 		restore_current_blog();
 	}
-
-	global $wpdb;
-	$hestahub_prefixes = array( 'hestahub_', '_site_transient_hestahub_' );
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	$hestahub_keys = $wpdb->get_col(
-		$wpdb->prepare(
-			"SELECT meta_key FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s OR meta_key LIKE %s",
-			$wpdb->esc_like( $hestahub_prefixes[0] ) . '%',
-			$wpdb->esc_like( $hestahub_prefixes[1] ) . '%'
-		)
-	);
-	foreach ( array_unique( $hestahub_keys ) as $hestahub_key ) {
-		if ( 0 === strpos( $hestahub_key, '_site_transient_' ) ) {
-			delete_site_transient( substr( $hestahub_key, strlen( '_site_transient_' ) ) );
-		} else {
-			delete_site_option( $hestahub_key );
-		}
+	foreach ( hestahub_uninstall_names( $GLOBALS['wpdb']->sitemeta, 'meta_key' ) as $hestahub_name ) {
+		delete_site_option( $hestahub_name );
 	}
 } else {
-	hestahub_uninstall_site();
+	foreach ( hestahub_uninstall_names( $GLOBALS['wpdb']->options, 'option_name' ) as $hestahub_name ) {
+		delete_option( $hestahub_name );
+	}
 }

@@ -30,7 +30,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 function hestahub(): \HestaHub\Plugin {
 	static $plugin = null;
 	if ( null === $plugin ) {
-		$plugin = new \HestaHub\Plugin( __FILE__ );
+		$plugin = new \HestaHub\Plugin();
 	}
 	return $plugin;
 }
