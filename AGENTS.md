@@ -1,0 +1,36 @@
+# HestaHub for WordPress
+
+A WordPress plugin that shows a HestaHub Tenant's Apartments, availability and Clinics on the Tenant's own website. It reads them from the HestaHub Public Tenant API, server-side, and caches them. It writes nothing back to HestaHub.
+
+## The contract comes first
+
+**[docs.hestahub.com/v1/](https://docs.hestahub.com/v1/)** is the source of truth for everything on the wire and for most of what this plugin must do: routes, caching and serving stale, what a route shows when there is no data, escalation, templates and hooks. Its JSON Schemas are under `https://docs.hestahub.com/v1/<revision>/`. Read the contract before changing anything that talks to the API or renders its data. If this repo and the contract disagree, the contract wins, and the disagreement is a bug to report.
+
+The plugin is a **tolerant reader**: it reads field by field, ignores unknown keys, and falls back on unknown enum values. It never validates a whole response against a schema at runtime. The schemas are for tests.
+
+## Fixed decisions
+
+- **Names:** slug, folder and text domain `hestahub`; PHP namespace `HestaHub\`.
+- **License:** GPLv2-or-later, like WordPress. Everything vendored must be compatible.
+- **Floors:** `Requires PHP: 7.4`, `Requires at least: 6.8`. Write PHP 7.4 syntax: no `match`, enums, `readonly`, constructor promotion, named arguments or `?->`. CI runs the floor and current stable PHP, plus PHPCompatibility at `testVersion 7.4-`. Below PHP 8.0 the plugin shows an admin notice saying "PHP 7". It never blocks.
+- **Requests:** always `https://` literally; `Authorization: Bearer <key>`; `User-Agent: HestaHub-WP/<plugin> (WordPress <wp>; PHP <php>)` on every request.
+- **The API key:** read from an environment variable, then a `wp-config.php` constant (`HESTAHUB_API_KEY`), then the database. The settings screen shows which source is in use and masks the key (last four characters).
+- **Updates:** `Update URI` set from the first release; a vendored `plugin-update-checker` reads a static JSON manifest and a release zip on GitHub Releases. The whole update mechanism sits behind **one conditional**, so a wordpress.org build can strip it. Auto-updates stay off unless the webmaster turns them on.
+- **Releases:** CI builds the zip on a tag. Built files are never committed.
+- **Schemas:** vendored into this repo for the test suite. CI fails if the vendored copy differs from the published one for the Revision the plugin claims. The plugin declares the minimum Revision it was built against.
+- **Rendering:** structural CSS with no colour opinions, a few CSS custom properties, and PHP templates a theme overrides by copying them into `<theme>/hestahub/` (core's `locate_template()`). A shortcode and a template tag in v1; a block only once a Tenant runs a block theme.
+- `readme.txt` in WordPress readme format from the first release, disclosing the external service and linking the contract.
+
+## Public repository
+
+This repo, its issues and pull requests are public. Don't name a Tenant's people. Don't describe a Tenant's hosting or website beyond what is needed to state a requirement. Never commit an API key, not even a revoked one.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues in `blackbucksoftware/hestahub-wordpress`, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, each label string equal to its role name. See `docs/agents/triage-labels.md`.
