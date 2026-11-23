@@ -2,7 +2,7 @@
 # Vendors YahnisElsts/plugin-update-checker (MIT) into lib/plugin-update-checker/
 # at a pinned release tag, replacing what is there.
 #
-# Usage: bin/vendor-puc.sh <tag>     e.g. bin/vendor-puc.sh v6.0
+# Usage: bin/vendor-update-checker.sh <tag>     e.g. bin/vendor-update-checker.sh v6.0
 #
 # Only updates.php loads it. Composer must not: the package's own
 # composer.json autoloads its loader unconditionally.

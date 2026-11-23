@@ -34,9 +34,13 @@ header() {
 	sed -n "s/^ \* $1: *//p" hestahub.php
 }
 
+readme_field() {
+	sed -n "s/^$1: *//p" readme.txt
+}
+
 version=$(header Version)
 constant=$(sed -n "s/^.*const VERSION = '\(.*\)';/\1/p" src/Plugin.php)
-stable=$(sed -n 's/^Stable tag: *//p' readme.txt)
+stable=$(readme_field 'Stable tag')
 
 if [ -z "$version" ] || [ "$version" != "$constant" ] || [ "$version" != "$stable" ]; then
 	echo "Version mismatch: hestahub.php '$version', Plugin::VERSION '$constant', readme.txt Stable tag '$stable'." >&2
@@ -95,7 +99,7 @@ if [ "$WPORG" = 0 ] && [ -n "$TAG" ]; then
 		"https://github.com/$REPO/releases/download/$TAG/$ZIP" \
 		"$(header 'Requires at least')" \
 		"$(header 'Requires PHP')" \
-		"$(sed -n 's/^Tested up to: *//p' readme.txt)" \
+		"$(readme_field 'Tested up to')" \
 		"https://github.com/$REPO" \
 		> "$OUT/hestahub.json"
 	echo "$OUT/hestahub.json"

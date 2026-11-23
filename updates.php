@@ -11,6 +11,10 @@
  * lib/plugin-update-checker/ and the Update URI header. Nothing else in the
  * plugin may refer to updates.
  *
+ * The Update URI header names our own host only so that wordpress.org never
+ * offers an update for this slug. The library ignores it: it injects updates
+ * through the update_plugins site transient.
+ *
  * @package HestaHub
  */
 

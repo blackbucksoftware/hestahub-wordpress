@@ -5,13 +5,13 @@
 
 namespace HestaHub\Tests;
 
-use WP_UnitTestCase;
+use Yoast\PHPUnitPolyfills\TestCases\TestCase;
 
 /**
  * The update channel sits behind one switch: a wordpress.org build
  * (bin/build-zip.sh --wporg) must load nothing update-related.
  */
-final class WporgBuildTest extends WP_UnitTestCase {
+final class WporgBuildTest extends TestCase {
 
 	/** @var string */
 	private static $build_dir;

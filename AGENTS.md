@@ -30,12 +30,12 @@ Needs PHP, Composer and a MySQL or MariaDB server.
 - **Lint and compatibility:** `composer lint` (syntax) and `composer compat` (PHPCompatibility, `testVersion 7.4-`).
 - **Build:** `bin/build-zip.sh [tag]` writes `build/hestahub-<version>.zip`. The version must agree in `hestahub.php`, `Plugin::VERSION` and the `readme.txt` Stable tag, and match the tag if one is given. With a tag it also writes `build/hestahub.json`, the update manifest. Pushing a `v*` tag runs CI, then the same script, and attaches the zip and the manifest to a GitHub Release.
 - **wordpress.org build:** `bin/build-zip.sh --wporg` leaves out the update channel (`updates.php`, `lib/plugin-update-checker/`, the `Update URI` header).
-- **Update the vendored update checker:** `bin/vendor-puc.sh <tag>` replaces `lib/plugin-update-checker/` with that release. The pinned tag is in its `VERSION` file.
+- **Update the vendored update checker:** `bin/vendor-update-checker.sh <tag>` replaces `lib/plugin-update-checker/` with that release. The pinned tag is in its `VERSION` file.
 
 ## Code conventions
 
 - Features implement `HestaHub\Feature`, are added in `hestahub.php`, and hook into WordPress in `register()`, which runs once on `plugins_loaded`.
-- The update channel lives in `updates.php` and nowhere else. Nothing outside it may refer to updates or to `lib/plugin-update-checker/`, so the `--wporg` build can drop it.
+- The update channel lives in `updates.php` and nowhere else. Outside it, only two things may refer to updates: the `file_exists()` require in `hestahub.php` (the one switch) and the `Update URI` header, which can't live anywhere else and which the `--wporg` build strips. Nothing may refer to `lib/plugin-update-checker/` except `updates.php`.
 - Every option, transient and site transient the plugin stores is named `hestahub_…`. `uninstall.php` deletes by that prefix.
 
 ## Public repository
