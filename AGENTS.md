@@ -29,6 +29,7 @@ Needs PHP, Composer and a MySQL or MariaDB server.
 - **Test:** `composer test` (PHPUnit with the WordPress test suite); `WP_MULTISITE=1 composer test` for multisite. The suite caps PHPUnit at 9, and `composer.lock` is resolved for PHP 7.4: update dependencies with `composer update`, never by hand.
 - **Lint and compatibility:** `composer lint` (syntax) and `composer compat` (PHPCompatibility, `testVersion 7.4-`).
 - **Build:** `bin/build-zip.sh [tag]` writes `build/hestahub-<version>.zip`. The version must agree in `hestahub.php`, `Plugin::VERSION` and the `readme.txt` Stable tag, and match the tag if one is given. With a tag it also writes `build/hestahub.json`, the update manifest. Pushing a `v*` tag runs CI, then the same script, and attaches the zip and the manifest to a GitHub Release.
+- **Contract schemas:** `bin/vendor-schemas.sh [revision]` vendors the schemas and examples into `tests/fixtures/api/` (default: `Client::REVISION`). `bin/vendor-schemas.sh --check` fails if they differ from the published ones; CI runs it. Raising `Client::REVISION` means re-vendoring in the same change.
 - **wordpress.org build:** `bin/build-zip.sh --wporg` leaves out the update channel (`updates.php`, `lib/plugin-update-checker/`, the `Update URI` header).
 - **Update the vendored update checker:** `bin/vendor-update-checker.sh <tag>` replaces `lib/plugin-update-checker/` with that release. The pinned tag is in its `VERSION` file.
 
@@ -36,6 +37,7 @@ Needs PHP, Composer and a MySQL or MariaDB server.
 
 - Features implement `HestaHub\Feature`, are added in `hestahub.php`, and hook into WordPress in `register()`, which runs once on `plugins_loaded`.
 - The update channel lives in `updates.php` and nowhere else. Outside it, only two things may refer to updates: the `file_exists()` require in `hestahub.php` (the one switch) and the `Update URI` header, which can't live anywhere else and which the `--wporg` build strips. Nothing may refer to `lib/plugin-update-checker/` except `updates.php`.
+- Only `HestaHub\Api\Client` talks to HestaHub. Everything else reads through `Client::get()`, which serves the cached copy, refetches past `ttl`, serves stale on any failure until `stale_ttl`, and backs off. TTLs come only from the body: never add a number of your own or a setting for one.
 - Every option, transient and site transient the plugin stores is named `hestahub_…`. `uninstall.php` deletes by that prefix.
 
 ## Public repository

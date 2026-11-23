@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.hestahub.com/v1/2026-11-23/meta.schema.json",
+  "title": "GET /api/v1/meta — success",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "data",
+    "revision",
+    "cache"
+  ],
+  "properties": {
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "version",
+        "status",
+        "revision",
+        "sunset",
+        "tenant",
+        "resources",
+        "endpoints",
+        "deprecations",
+        "minimum_plugin_version",
+        "recommended_plugin_version",
+        "docs_url"
+      ],
+      "properties": {
+        "version": {
+          "const": "v1"
+        },
+        "status": {
+          "type": "string",
+          "description": "Enum-like: current | deprecated | retired. Unknown value: treat as current."
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        },
+        "sunset": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tenant": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Enum-like members: apartments, clinics."
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Paths v1 serves, e.g. /api/v1/apartments."
+        },
+        "deprecations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "endpoint",
+              "sunset"
+            ],
+            "properties": {
+              "endpoint": {
+                "type": "string"
+              },
+              "sunset": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "minimum_plugin_version": {
+          "type": "string"
+        },
+        "recommended_plugin_version": {
+          "type": "string"
+        },
+        "docs_url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        }
+      }
+    },
+    "revision": {
+      "$ref": "#/$defs/revision"
+    },
+    "cache": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "ttl",
+        "stale_ttl"
+      ],
+      "properties": {
+        "ttl": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stale_ttl": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "revision": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    }
+  }
+}

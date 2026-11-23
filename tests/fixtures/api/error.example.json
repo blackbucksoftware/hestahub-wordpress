@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "key_revoked",
+    "message": "The API key was revoked."
+  },
+  "revision": "2026-11-23",
+  "docs_url": "https://docs.hestahub.com/v1/"
+}

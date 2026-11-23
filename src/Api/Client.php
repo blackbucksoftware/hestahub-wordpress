@@ -1,0 +1,317 @@
+<?php
+/**
+ * @package HestaHub
+ */
+
+namespace HestaHub\Api;
+
+use HestaHub\Plugin;
+
+/**
+ * The one place that talks to HestaHub. Contract: https://docs.hestahub.com/v1/
+ *
+ * Reads go through get(): the cached copy while it is fresh (ttl), otherwise
+ * a fetch; when the fetch fails, the cached copy until stale_ttl, whatever the
+ * failure; then a back-off before the next try. TTLs come only from the body.
+ */
+final class Client {
+
+	/**
+	 * The minimum Revision of the contract this plugin was built for.
+	 */
+	const REVISION = '2026-11-23';
+
+	/**
+	 * The endpoints v1 serves.
+	 */
+	const ENDPOINTS = array( 'meta', 'apartments', 'availability', 'clinics' );
+
+	/**
+	 * The resources meta may list that this plugin knows how to serve.
+	 */
+	const RESOURCES = array( 'apartments', 'clinics' );
+
+	/**
+	 * The contract: "A client MUST check meta at least once every 24 hours",
+	 * so a meta copy is fresh for its ttl but never longer than this.
+	 */
+	const META_MAX_AGE = 86400;
+
+	/** @var Credentials */
+	private $credentials;
+
+	/** @var callable */
+	private $clock;
+
+	/**
+	 * @param Credentials   $credentials Where the Tenant and key come from.
+	 * @param callable|null $clock       Returns the current Unix time. Defaults to time().
+	 */
+	public function __construct( Credentials $credentials, $clock = null ) {
+		$this->credentials = $credentials;
+		$this->clock       = $clock ? $clock : 'time';
+	}
+
+	/**
+	 * Reads an endpoint: the cached copy while it is fresh, otherwise a new
+	 * fetch. When the fetch fails or must wait, the cached copy is served
+	 * until stale_ttl.
+	 *
+	 * @param string $endpoint meta, apartments, availability or clinics.
+	 */
+	public function get( string $endpoint ): Result {
+		$this->check_endpoint( $endpoint );
+		$now    = $this->now();
+		$tenant = $this->credentials->tenant();
+		$state  = EndpointState::load( $endpoint, $tenant );
+		$cached = $this->cached( $endpoint, $tenant, $now );
+
+		if ( $cached && $now < $cached['fetched_at'] + $this->soft_ttl( $endpoint, $cached['ttl'] ) ) {
+			return $this->result( $cached, false, $state, 0 );
+		}
+
+		if ( ! $this->credentials->is_complete() ) {
+			return new Result(
+				array(
+					'copy'    => $cached,
+					'stale'   => (bool) $cached,
+					'failure' => new Failure( Failure::NOT_CONFIGURED, 0, '', '' ),
+				)
+			);
+		}
+
+		$wait = $state->wait( $now );
+		if ( $wait > 0 ) {
+			return $this->result( $cached, true, $state, $wait );
+		}
+
+		$fetched = $this->fetch( $endpoint );
+		if ( $fetched instanceof Failure ) {
+			$wait = $state->failed( $fetched, $now );
+			return $this->result( $cached, true, $state, $wait );
+		}
+
+		$state->succeeded( $now );
+		$fetched['fetched_at'] = $now;
+		$fetched['tenant']     = $tenant;
+		if ( $fetched['stale_ttl'] > 0 ) {
+			// An option, not a transient: a persistent object cache may evict a
+			// transient early, and the contract says to keep a body until
+			// stale_ttl. cached() enforces the expiry.
+			update_option( $this->cache_key( $endpoint ), $fetched, false );
+		} else {
+			// The body says how long to keep it. Without that, keep nothing.
+			delete_option( $this->cache_key( $endpoint ) );
+		}
+		return $this->result( $fetched, false, $state, 0 );
+	}
+
+	/**
+	 * Fetches an endpoint now, bypassing the cache and the back-off, and
+	 * leaving both untouched. For "test connection".
+	 *
+	 * @param string $endpoint meta, apartments, availability or clinics.
+	 */
+	public function fetch_live( string $endpoint ): Result {
+		$this->check_endpoint( $endpoint );
+		if ( ! $this->credentials->is_complete() ) {
+			return new Result( array( 'failure' => new Failure( Failure::NOT_CONFIGURED, 0, '', '' ) ) );
+		}
+
+		$fetched = $this->fetch( $endpoint );
+		if ( $fetched instanceof Failure ) {
+			return new Result( array( 'failure' => $fetched ) );
+		}
+		$fetched['fetched_at'] = $this->now();
+		return new Result( array( 'copy' => $fetched ) );
+	}
+
+	/**
+	 * Discards every cached copy and lets the next read of every endpoint
+	 * fetch at once. For "refresh now". It also discards the stale copy that
+	 * may be keeping the site up.
+	 */
+	public function flush(): void {
+		$tenant = $this->credentials->tenant();
+		foreach ( self::ENDPOINTS as $endpoint ) {
+			delete_option( $this->cache_key( $endpoint ) );
+			EndpointState::load( $endpoint, $tenant )->retry_now();
+		}
+	}
+
+	/**
+	 * The resources meta lists that this plugin serves (apartments, clinics),
+	 * in meta's order; unknown members are left out. Null while meta is
+	 * unavailable.
+	 *
+	 * @return string[]|null
+	 */
+	public function resources(): ?array {
+		$meta = $this->get( 'meta' );
+		if ( ! $meta->is_ok() ) {
+			return null;
+		}
+		$data      = $meta->data();
+		$resources = array();
+		if ( isset( $data['resources'] ) && is_array( $data['resources'] ) ) {
+			foreach ( $data['resources'] as $resource ) {
+				if ( in_array( $resource, self::RESOURCES, true ) && ! in_array( $resource, $resources, true ) ) {
+					$resources[] = $resource;
+				}
+			}
+		}
+		return $resources;
+	}
+
+	/**
+	 * @param array|null    $copy  The copy to serve, if any.
+	 * @param bool          $stale Whether a served copy is past its ttl.
+	 * @param EndpointState $state The endpoint's state.
+	 * @param int           $wait  Seconds until the next fetch may be tried.
+	 */
+	private function result( $copy, bool $stale, EndpointState $state, int $wait ): Result {
+		return new Result(
+			array(
+				'copy'          => $copy,
+				'stale'         => $copy && $stale,
+				'failure'       => $state->failure(),
+				'retry_after'   => $wait,
+				'last_success'  => $state->last_success(),
+				'failing_since' => $state->failing_since(),
+			)
+		);
+	}
+
+	/**
+	 * How long a copy is fresh: the body's ttl, but meta at most a day.
+	 *
+	 * @param string $endpoint The endpoint.
+	 * @param int    $ttl      The body's ttl.
+	 */
+	private function soft_ttl( string $endpoint, int $ttl ): int {
+		return 'meta' === $endpoint ? min( $ttl, self::META_MAX_AGE ) : $ttl;
+	}
+
+	/**
+	 * The cached copy of an endpoint, unless it is past stale_ttl or was
+	 * fetched for another Tenant.
+	 *
+	 * @param string $endpoint The endpoint.
+	 * @param string $tenant   The Tenant's subdomain.
+	 * @param int    $now      The current time.
+	 */
+	private function cached( string $endpoint, string $tenant, int $now ): ?array {
+		$cached = get_option( $this->cache_key( $endpoint ) );
+		if ( ! is_array( $cached ) || ! isset( $cached['data'], $cached['ttl'], $cached['stale_ttl'], $cached['fetched_at'], $cached['tenant'] ) ) {
+			return null;
+		}
+		if ( $cached['tenant'] !== $tenant || $now >= $cached['fetched_at'] + $cached['stale_ttl'] ) {
+			return null;
+		}
+		return $cached;
+	}
+
+	/**
+	 * Requests an endpoint once and reads the envelope field by field.
+	 *
+	 * @param string $endpoint The endpoint.
+	 * @return array|Failure The success envelope's data, revision, currency,
+	 *                       prices_include_tax, ttl and stale_ttl, or why it failed.
+	 */
+	private function fetch( string $endpoint ) {
+		$response = wp_remote_get(
+			'https://' . $this->credentials->tenant() . '.hestahub.com/api/v1/' . $endpoint,
+			array(
+				'headers'     => array(
+					'Authorization' => 'Bearer ' . $this->credentials->key(),
+					'Accept'        => 'application/json',
+				),
+				'user-agent'  => $this->user_agent(),
+				'redirection' => 0,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new Failure( Failure::OUTAGE, 0, '', $response->get_error_message() );
+		}
+
+		$status = (int) wp_remote_retrieve_response_code( $response );
+		$body   = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $status < 200 || $status > 299 ) {
+			$error = is_array( $body ) && isset( $body['error'] ) && is_array( $body['error'] ) ? $body['error'] : array();
+			return Failure::from_status(
+				$status,
+				(string) self::typed( $error, 'code', 'is_string' ),
+				(string) self::typed( $error, 'message', 'is_string' )
+			);
+		}
+
+		if ( ! is_array( $body ) || ! isset( $body['data'] ) || ! is_array( $body['data'] ) ) {
+			// No success envelope: an outage, whatever the status said.
+			return new Failure( Failure::OUTAGE, $status, '', '' );
+		}
+
+		$cache = self::typed( $body, 'cache', 'is_array' );
+		return array(
+			'data'               => $body['data'],
+			'revision'           => self::typed( $body, 'revision', 'is_string' ),
+			'currency'           => self::typed( $body, 'currency', 'is_string' ),
+			'prices_include_tax' => self::typed( $body, 'prices_include_tax', 'is_bool' ),
+			'ttl'                => self::seconds( $cache, 'ttl' ),
+			'stale_ttl'          => self::seconds( $cache, 'stale_ttl' ),
+		);
+	}
+
+	/**
+	 * A field of a decoded object if it has the expected type, else null.
+	 *
+	 * @param mixed    $object A decoded JSON object (array), or anything else.
+	 * @param string   $key    The field.
+	 * @param callable $is     Type check, e.g. is_string.
+	 * @return mixed
+	 */
+	private static function typed( $object, string $key, callable $is ) {
+		return is_array( $object ) && isset( $object[ $key ] ) && $is( $object[ $key ] ) ? $object[ $key ] : null;
+	}
+
+	/**
+	 * A positive number of seconds from the body's cache object, 0 when missing.
+	 *
+	 * @param array|null $cache The body's cache object.
+	 * @param string     $key   ttl or stale_ttl.
+	 */
+	private static function seconds( $cache, string $key ): int {
+		$seconds = self::typed( $cache, $key, 'is_int' );
+		return null !== $seconds && $seconds > 0 ? $seconds : 0;
+	}
+
+	/**
+	 * @param string $endpoint The endpoint.
+	 * @throws \InvalidArgumentException When v1 has no such endpoint.
+	 */
+	private function check_endpoint( string $endpoint ): void {
+		if ( ! in_array( $endpoint, self::ENDPOINTS, true ) ) {
+			throw new \InvalidArgumentException( esc_html( "Unknown HestaHub endpoint: $endpoint" ) );
+		}
+	}
+
+	private function cache_key( string $endpoint ): string {
+		return 'hestahub_cache_' . $endpoint;
+	}
+
+	private function now(): int {
+		return (int) call_user_func( $this->clock );
+	}
+
+	private function user_agent(): string {
+		return sprintf(
+			'HestaHub-WP/%s (WordPress %s; PHP %d.%d.%d)',
+			Plugin::VERSION,
+			get_bloginfo( 'version' ),
+			PHP_MAJOR_VERSION,
+			PHP_MINOR_VERSION,
+			PHP_RELEASE_VERSION
+		);
+	}
+}

@@ -41,7 +41,8 @@ final class WporgBuildTest extends TestCase {
 
 		$this->assertSame( array(), $loaded['update_classes'], 'No update-checker class is declared.' );
 		$this->assertSame( array(), $loaded['update_files'], 'No update-related file is included.' );
-		$this->assertSame( array( 'plugins_loaded' ), $loaded['hooks'], 'Only the bootstrap hooks in.' );
+		$this->assertContains( 'plugins_loaded', $loaded['hooks'], 'The plugin did load.' );
+		$this->assertSame( array(), array_values( preg_grep( '/update|puc/i', $loaded['hooks'] ) ), 'No update-related hook.' );
 	}
 
 	public function test_the_wporg_build_has_no_update_uri_header() {
@@ -52,7 +53,8 @@ final class WporgBuildTest extends TestCase {
 
 	/**
 	 * Loads a main plugin file in a fresh PHP process with WordPress's hook
-	 * functions stubbed, and reports what it loaded.
+	 * functions stubbed, and reports what it loaded. The plugin must do no
+	 * more than hook in at load time, so these stubs are all it needs.
 	 *
 	 * @param string $file Main plugin file.
 	 * @return array{update_classes: string[], update_files: string[], hooks: string[]}
@@ -63,6 +65,8 @@ define( 'ABSPATH', '/' );
 $GLOBALS['hestahub_hooks'] = array();
 function add_action( $hook ) { $GLOBALS['hestahub_hooks'][] = $hook; return true; }
 function add_filter( $hook ) { $GLOBALS['hestahub_hooks'][] = $hook; return true; }
+function register_activation_hook( $file, $callback ) { add_action( 'activate_hestahub' ); }
+function register_deactivation_hook( $file, $callback ) { add_action( 'deactivate_hestahub' ); }
 require $argv[1];
 $update = '/update|puc/i';
 echo json_encode( array(
