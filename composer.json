@@ -37,7 +37,10 @@
     },
     "scripts": {
         "lint": "parallel-lint --exclude vendor --exclude build --exclude .wp-tests .",
-        "compat": "phpcs",
+        "compat": [
+            "phpcs",
+            "phpcs --standard=PHPCompatibility --runtime-set testVersion 7.4 --extensions=php lib"
+        ],
         "test": "phpunit"
     }
 }
