@@ -27,6 +27,8 @@ This plugin connects to the HestaHub Public Tenant API, a service run by HestaHu
 * **What is fetched:** your Tenant's name and details about the API itself (its Revision and which plugin versions it supports), its Apartments with their descriptions, pictures and rates, their availability as anonymous date ranges, and your Clinics. No Guest, booking or personal data is fetched.
 * **What is sent:** nothing besides your API key (as `Authorization: Bearer`) and a `User-Agent` header naming the plugin's, WordPress's and PHP's versions. No visitor data and no site URL are sent. HestaHub stores the `User-Agent` against your key, to decide when the plugin's minimum PHP version may rise.
 
+Updates: unless installed from wordpress.org, the plugin also checks GitHub for new versions, like WordPress does for plugins from wordpress.org. Twice a day, and when you look for updates, your server fetches the file `hestahub.json` from this plugin's latest release at `https://github.com/blackbucksoftware/hestahub-wordpress/releases/`, and the release zip when you update. GitHub receives your server's IP address and a `User-Agent` naming WordPress and your site's URL, as with any WordPress update check. Nothing else is sent. GitHub's privacy statement: https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement
+
 The contract: https://docs.hestahub.com/v1/
 
 == Changelog ==

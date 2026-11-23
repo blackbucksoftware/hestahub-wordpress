@@ -20,10 +20,11 @@ jobs:
         with:
           php-version: '7.4'
           coverage: none
-      - name: Build the zip
-        id: build
-        run: echo "zip=$(bin/build-zip.sh "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+      - name: Build the zip and the update manifest
+        run: bin/build-zip.sh "$GITHUB_REF_NAME"
       - name: Publish the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "${{ steps.build.outputs.zip }}" --verify-tag --generate-notes
+        # The update channel reads hestahub.json from the latest release, so
+        # the manifest goes up together with the zip it points at.
+        run: gh release create "$GITHUB_REF_NAME" build/hestahub-*.zip build/hestahub.json --verify-tag --generate-notes

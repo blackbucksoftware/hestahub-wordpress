@@ -6,6 +6,8 @@
 	<exclude-pattern>/vendor/*</exclude-pattern>
 	<exclude-pattern>/.wp-tests/*</exclude-pattern>
 	<exclude-pattern>/build/*</exclude-pattern>
+	<!-- Vendored third-party code, pinned and left unmodified (bin/vendor-puc.sh). -->
+	<exclude-pattern>/lib/*</exclude-pattern>
 
 	<arg name="extensions" value="php"/>
 	<arg value="ps"/>

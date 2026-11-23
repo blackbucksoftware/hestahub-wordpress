@@ -28,11 +28,14 @@ Needs PHP, Composer and a MySQL or MariaDB server.
 - **Install:** `composer install`, then `bin/install-wp-tests.sh <db-name> <db-user> <db-pass> [db-host] [wp-version]` once. It puts WordPress and its test suite in `.wp-tests/` and creates the database. `wp-version` is `latest` or a release such as `6.8`.
 - **Test:** `composer test` (PHPUnit with the WordPress test suite); `WP_MULTISITE=1 composer test` for multisite. The suite caps PHPUnit at 9, and `composer.lock` is resolved for PHP 7.4: update dependencies with `composer update`, never by hand.
 - **Lint and compatibility:** `composer lint` (syntax) and `composer compat` (PHPCompatibility, `testVersion 7.4-`).
-- **Build:** `bin/build-zip.sh [tag]` writes `build/hestahub-<version>.zip`. The version must agree in `hestahub.php`, `Plugin::VERSION` and the `readme.txt` Stable tag, and match the tag if one is given. Pushing a `v*` tag runs the same script in CI and attaches the zip to a GitHub Release.
+- **Build:** `bin/build-zip.sh [tag]` writes `build/hestahub-<version>.zip`. The version must agree in `hestahub.php`, `Plugin::VERSION` and the `readme.txt` Stable tag, and match the tag if one is given. With a tag it also writes `build/hestahub.json`, the update manifest. Pushing a `v*` tag runs CI, then the same script, and attaches the zip and the manifest to a GitHub Release.
+- **wordpress.org build:** `bin/build-zip.sh --wporg` leaves out the update channel (`updates.php`, `lib/plugin-update-checker/`, the `Update URI` header).
+- **Update the vendored update checker:** `bin/vendor-puc.sh <tag>` replaces `lib/plugin-update-checker/` with that release. The pinned tag is in its `VERSION` file.
 
 ## Code conventions
 
 - Features implement `HestaHub\Feature`, are added in `hestahub.php`, and hook into WordPress in `register()`, which runs once on `plugins_loaded`.
+- The update channel lives in `updates.php` and nowhere else. Nothing outside it may refer to updates or to `lib/plugin-update-checker/`, so the `--wporg` build can drop it.
 - Every option, transient and site transient the plugin stores is named `hestahub_…`. `uninstall.php` deletes by that prefix.
 
 ## Public repository

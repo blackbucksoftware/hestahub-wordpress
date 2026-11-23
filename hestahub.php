@@ -11,11 +11,18 @@
  * License URI:       https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
  * Text Domain:       hestahub
  * Domain Path:       /languages
+ * Update URI:        https://updates.hestahub.com/hestahub
  *
  * @package HestaHub
  */
 
 defined( 'ABSPATH' ) || exit;
+
+// The update channel, behind one switch: a wordpress.org build leaves updates.php out.
+// Loaded before the autoloader check, so a release missing its autoloader can still be updated.
+if ( file_exists( __DIR__ . '/updates.php' ) ) {
+	require __DIR__ . '/updates.php';
+}
 
 if ( ! file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	// A git checkout without `composer install`. Release zips ship the autoloader.
