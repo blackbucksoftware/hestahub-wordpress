@@ -10,8 +10,9 @@ use HestaHub\Plugin;
 
 /**
  * Checks meta twice a day by WP-Cron, so it is checked at least every 24
- * hours even on a site no one visits. The Client fetches only when its copy
- * is due.
+ * hours even when no page reads it. WP-Cron itself runs on page loads, or on
+ * a real cron where the host sets one up. The Client fetches only when its
+ * copy is due.
  */
 final class MetaCheck implements Feature {
 

@@ -402,6 +402,86 @@ final class ClientTest extends WP_UnitTestCase {
 		$this->assertCount( 2, $this->requests, 'No numbers of its own: nothing to keep it for.' );
 	}
 
+	public function test_failing_since_is_when_the_streak_began() {
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->client()->get( 'apartments' );
+		$this->assertNull( $this->client()->get( 'apartments' )->failing_since() );
+
+		$this->now += 6 * HOUR_IN_SECONDS;
+		$began = $this->now;
+		$this->respond( 500 );
+		$this->client()->get( 'apartments' );
+		$this->now += MINUTE_IN_SECONDS;
+		$this->respond( 401 );
+		$result = $this->client()->get( 'apartments' );
+
+		$this->assertSame( $began, $result->failing_since() );
+
+		$this->now += HOUR_IN_SECONDS;
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->assertNull( $this->client()->get( 'apartments' )->failing_since() );
+	}
+
+	public function test_last_success_outlives_the_cached_copy() {
+		$this->assertNull( $this->client_with_failure()->last_success(), 'Never fetched.' );
+
+		$this->now += HOUR_IN_SECONDS;
+		$fetched = $this->now;
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->assertSame( $fetched, $this->client()->get( 'apartments' )->last_success() );
+
+		$this->now += 8 * DAY_IN_SECONDS; // Past stale_ttl: the copy is gone.
+		$this->respond( 500 );
+		$result = $this->client()->get( 'apartments' );
+
+		$this->assertFalse( $result->is_ok() );
+		$this->assertSame( $fetched, $result->last_success() );
+	}
+
+	public function test_a_copy_from_another_tenant_is_never_served() {
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->client()->get( 'apartments' );
+
+		update_option( 'hestahub_tenant', 'other' );
+		$this->respond( 401 );
+		$result = $this->client()->get( 'apartments' );
+
+		$this->assertSame( 'https://other.hestahub.com/api/v1/apartments', $this->requests[1]['url'] );
+		$this->assertFalse( $result->is_ok() );
+		$this->assertNull( $result->last_success() );
+	}
+
+	public function test_another_tenants_back_off_does_not_hold() {
+		$this->respond( 500 );
+		$this->client()->get( 'apartments' );
+
+		update_option( 'hestahub_tenant', 'other' );
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$result = $this->client()->get( 'apartments' );
+
+		$this->assertCount( 2, $this->requests );
+		$this->assertTrue( $result->is_ok() );
+	}
+
+	public function test_endpoints_back_off_independently() {
+		$this->respond( 500 );
+		$this->client()->get( 'apartments' );
+		$this->respond( 500 );
+		$this->client()->get( 'clinics' );
+
+		$this->now += MINUTE_IN_SECONDS;
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->respond( 200, $this->example( 'clinics' ) );
+
+		$this->assertTrue( $this->client()->get( 'apartments' )->is_ok() );
+		$this->assertTrue( $this->client()->get( 'clinics' )->is_ok() );
+	}
+
+	private function client_with_failure() {
+		$this->respond( 500 );
+		return $this->client()->get( 'apartments' );
+	}
+
 	/**
 	 * Adds an unknown key to every object, and turns every enum-like string
 	 * the contract names into an unknown value.

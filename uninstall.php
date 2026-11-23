@@ -44,14 +44,18 @@ function hestahub_uninstall_names( $table, $column ) {
 	return $wpdb->get_col( $wpdb->prepare( "SELECT {$column} FROM {$table} WHERE {$where}", $likes ) );
 }
 
-// WP-Cron events, by hook name (src/Api/MetaCheck.php).
-foreach ( array( 'hestahub_check_meta' ) as $hestahub_hook ) {
-	wp_clear_scheduled_hook( $hestahub_hook );
+/**
+ * Removes the plugin's WP-Cron events from the current site.
+ */
+function hestahub_uninstall_cron() {
+	// By hook name: src/Api/MetaCheck.php is not loaded here.
+	wp_clear_scheduled_hook( 'hestahub_check_meta' );
 }
 
 if ( is_multisite() ) {
 	foreach ( get_sites( array( 'fields' => 'ids', 'number' => 0 ) ) as $hestahub_site_id ) {
 		switch_to_blog( $hestahub_site_id );
+		hestahub_uninstall_cron();
 		foreach ( hestahub_uninstall_names( $GLOBALS['wpdb']->options, 'option_name' ) as $hestahub_name ) {
 			delete_option( $hestahub_name );
 		}
@@ -61,6 +65,7 @@ if ( is_multisite() ) {
 		delete_site_option( $hestahub_name );
 	}
 } else {
+	hestahub_uninstall_cron();
 	foreach ( hestahub_uninstall_names( $GLOBALS['wpdb']->options, 'option_name' ) as $hestahub_name ) {
 		delete_option( $hestahub_name );
 	}

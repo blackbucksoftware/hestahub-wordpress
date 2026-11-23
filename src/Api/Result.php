@@ -7,7 +7,8 @@ namespace HestaHub\Api;
 
 /**
  * What a read from HestaHub produced: a copy to render, a failure, or both
- * (a stale copy served because the refetch failed or is waiting).
+ * (a stale copy served because the refetch failed or is waiting), plus the
+ * clocks the render ladder and escalation count from.
  */
 final class Result {
 
@@ -23,39 +24,24 @@ final class Result {
 	/** @var int */
 	private $retry_after;
 
-	/**
-	 * @param array|null   $copy        A copy (see ok()), or null when there is none.
-	 * @param bool         $stale       Whether the copy is past its ttl.
-	 * @param Failure|null $failure     Why the last fetch failed, if it did.
-	 * @param int          $retry_after Seconds until the next fetch may be tried.
-	 */
-	private function __construct( $copy, bool $stale, $failure, int $retry_after ) {
-		$this->copy        = $copy;
-		$this->stale       = $stale;
-		$this->failure     = $failure;
-		$this->retry_after = $retry_after;
-	}
+	/** @var int|null */
+	private $last_success;
+
+	/** @var int|null */
+	private $failing_since;
 
 	/**
-	 * A copy to render.
-	 *
-	 * @param array        $copy        data, revision, currency, prices_include_tax and fetched_at.
-	 * @param bool         $stale       Whether the copy is past its ttl.
-	 * @param Failure|null $failure     Why the refetch failed, when a stale copy is served.
-	 * @param int          $retry_after Seconds until the next fetch may be tried, when it failed.
+	 * @param array $parts copy (data, revision, currency, prices_include_tax,
+	 *                     fetched_at) or null; stale; failure (Failure|null);
+	 *                     retry_after; last_success; failing_since.
 	 */
-	public static function ok( array $copy, bool $stale = false, $failure = null, int $retry_after = 0 ): self {
-		return new self( $copy, $stale, $failure, $retry_after );
-	}
-
-	/**
-	 * Nothing to render.
-	 *
-	 * @param Failure $failure     Why.
-	 * @param int     $retry_after Seconds until the next fetch may be tried.
-	 */
-	public static function failed( Failure $failure, int $retry_after ): self {
-		return new self( null, false, $failure, $retry_after );
+	public function __construct( array $parts ) {
+		$this->copy          = isset( $parts['copy'] ) ? $parts['copy'] : null;
+		$this->stale         = ! empty( $parts['stale'] );
+		$this->failure       = isset( $parts['failure'] ) ? $parts['failure'] : null;
+		$this->retry_after   = isset( $parts['retry_after'] ) ? (int) $parts['retry_after'] : 0;
+		$this->last_success  = isset( $parts['last_success'] ) ? (int) $parts['last_success'] : null;
+		$this->failing_since = isset( $parts['failing_since'] ) ? (int) $parts['failing_since'] : null;
 	}
 
 	/**
@@ -69,35 +55,36 @@ final class Result {
 	 * The envelope's data, exactly as received; an empty array when not ok.
 	 */
 	public function data(): array {
-		return $this->copy ? $this->copy['data'] : array();
+		return $this->field( 'data', array() );
 	}
 
 	/**
 	 * The Revision that answered, or null when unknown.
 	 */
 	public function revision(): ?string {
-		return $this->copy ? $this->copy['revision'] : null;
+		return $this->field( 'revision' );
 	}
 
 	/**
 	 * The envelope's ISO 4217 currency, or null when the body has none.
 	 */
 	public function currency(): ?string {
-		return $this->copy ? $this->copy['currency'] : null;
+		return $this->field( 'currency' );
 	}
 
 	/**
 	 * Whether the body's amounts include VAT, or null when the body does not say.
 	 */
 	public function prices_include_tax(): ?bool {
-		return $this->copy ? $this->copy['prices_include_tax'] : null;
+		return $this->field( 'prices_include_tax' );
 	}
 
 	/**
-	 * When the copy was fetched (Unix time), or null when there is none.
+	 * When this copy was fetched (Unix time), or null when there is none.
+	 * The calendar's "Stand:" line.
 	 */
 	public function fetched_at(): ?int {
-		return $this->copy ? $this->copy['fetched_at'] : null;
+		return $this->field( 'fetched_at' );
 	}
 
 	/**
@@ -115,10 +102,36 @@ final class Result {
 	}
 
 	/**
-	 * Seconds until the next fetch may be tried after a failure; 0 when the
-	 * last fetch did not fail. A 503's Retry-After.
+	 * Seconds until the plugin will next try to fetch, after a failure; 0
+	 * when the last fetch did not fail. What a 503 sends as its Retry-After.
 	 */
 	public function retry_after(): int {
 		return $this->retry_after;
+	}
+
+	/**
+	 * When the endpoint last fetched successfully for this Tenant (Unix time),
+	 * even after that copy has expired; null if never. The render ladder
+	 * counts from it, and escalation never emails a plugin that never fetched.
+	 */
+	public function last_success(): ?int {
+		return $this->last_success;
+	}
+
+	/**
+	 * When the current run of failures began (Unix time), or null when the
+	 * last fetch did not fail. Escalation counts "24 continuous hours" from it.
+	 */
+	public function failing_since(): ?int {
+		return $this->failing_since;
+	}
+
+	/**
+	 * @param string $key     A key of the copy.
+	 * @param mixed  $default What to return without a copy.
+	 * @return mixed
+	 */
+	private function field( string $key, $default = null ) {
+		return null === $this->copy ? $default : $this->copy[ $key ];
 	}
 }

@@ -9,6 +9,10 @@ use HestaHub\Plugin;
 
 /**
  * The one place that talks to HestaHub. Contract: https://docs.hestahub.com/v1/
+ *
+ * Reads go through get(): the cached copy while it is fresh (ttl), otherwise
+ * a fetch; when the fetch fails, the cached copy until stale_ttl, whatever the
+ * failure; then a back-off before the next try. TTLs come only from the body.
  */
 final class Client {
 
@@ -28,21 +32,10 @@ final class Client {
 	const RESOURCES = array( 'apartments', 'clinics' );
 
 	/**
-	 * Back-off: outages wait one minute, doubling up to the cap; verdicts wait the cap.
-	 */
-	const FIRST_RETRY = 60;
-	const MAX_RETRY   = 3600;
-
-	/**
-	 * meta is checked at least this often, whatever its ttl says.
+	 * The contract: "A client MUST check meta at least once every 24 hours",
+	 * so a meta copy is fresh for its ttl but never longer than this.
 	 */
 	const META_MAX_AGE = 86400;
-
-	/**
-	 * Option holding each endpoint's back-off: its last failure, consecutive
-	 * outages and when it may be retried.
-	 */
-	const STATE_OPTION = 'hestahub_api_state';
 
 	/** @var Credentials */
 	private $credentials;
@@ -61,40 +54,51 @@ final class Client {
 
 	/**
 	 * Reads an endpoint: the cached copy while it is fresh, otherwise a new
-	 * fetch. When the fetch fails, the cached copy is served until stale_ttl.
+	 * fetch. When the fetch fails or must wait, the cached copy is served
+	 * until stale_ttl.
 	 *
 	 * @param string $endpoint meta, apartments, availability or clinics.
 	 */
 	public function get( string $endpoint ): Result {
 		$this->check_endpoint( $endpoint );
 		$now    = $this->now();
-		$cached = $this->cached( $endpoint, $now );
+		$tenant = $this->credentials->tenant();
+		$state  = EndpointState::load( $endpoint, $tenant );
+		$cached = $this->cached( $endpoint, $tenant, $now );
+
 		if ( $cached && $now < $cached['fetched_at'] + $this->soft_ttl( $endpoint, $cached['ttl'] ) ) {
-			return Result::ok( $cached );
+			return $this->result( $cached, false, $state, 0 );
 		}
 
 		if ( ! $this->credentials->is_complete() ) {
-			return $this->failed( $cached, new Failure( Failure::NOT_CONFIGURED, 0, '', '' ), 0 );
+			return new Result(
+				array(
+					'copy'    => $cached,
+					'stale'   => (bool) $cached,
+					'failure' => new Failure( Failure::NOT_CONFIGURED, 0, '', '' ),
+				)
+			);
 		}
 
-		$state = $this->state( $endpoint );
-		if ( $state && $now < $state['retry_at'] ) {
-			return $this->failed( $cached, $state['failure'], $state['retry_at'] - $now );
+		$wait = $state->wait( $now );
+		if ( $wait > 0 ) {
+			return $this->result( $cached, true, $state, $wait );
 		}
 
 		$fetched = $this->fetch( $endpoint );
 		if ( $fetched instanceof Failure ) {
-			$wait = $this->back_off( $endpoint, $fetched, $state, $now );
-			return $this->failed( $cached, $fetched, $wait );
+			$wait = $state->failed( $fetched, $now );
+			return $this->result( $cached, true, $state, $wait );
 		}
 
-		$this->clear_state( $endpoint );
+		$state->succeeded( $now );
 		$fetched['fetched_at'] = $now;
+		$fetched['tenant']     = $tenant;
 		if ( $fetched['stale_ttl'] > 0 ) {
 			// The body says how long to keep it. Without that, keep nothing.
 			set_transient( $this->cache_key( $endpoint ), $fetched, $fetched['stale_ttl'] );
 		}
-		return Result::ok( $fetched );
+		return $this->result( $fetched, false, $state, 0 );
 	}
 
 	/**
@@ -106,27 +110,28 @@ final class Client {
 	public function fetch_live( string $endpoint ): Result {
 		$this->check_endpoint( $endpoint );
 		if ( ! $this->credentials->is_complete() ) {
-			return Result::failed( new Failure( Failure::NOT_CONFIGURED, 0, '', '' ), 0 );
+			return new Result( array( 'failure' => new Failure( Failure::NOT_CONFIGURED, 0, '', '' ) ) );
 		}
 
 		$fetched = $this->fetch( $endpoint );
 		if ( $fetched instanceof Failure ) {
-			return Result::failed( $fetched, 0 );
+			return new Result( array( 'failure' => $fetched ) );
 		}
 		$fetched['fetched_at'] = $this->now();
-		return Result::ok( $fetched );
+		return new Result( array( 'copy' => $fetched ) );
 	}
 
 	/**
-	 * Discards every cached copy and every back-off, so the next read fetches.
-	 * For "refresh now". It also discards the stale copy that may be keeping
-	 * the site up.
+	 * Discards every cached copy and lets the next read of every endpoint
+	 * fetch at once. For "refresh now". It also discards the stale copy that
+	 * may be keeping the site up.
 	 */
 	public function flush(): void {
+		$tenant = $this->credentials->tenant();
 		foreach ( self::ENDPOINTS as $endpoint ) {
 			delete_transient( $this->cache_key( $endpoint ) );
+			EndpointState::load( $endpoint, $tenant )->retry_now();
 		}
-		delete_option( self::STATE_OPTION );
 	}
 
 	/**
@@ -141,21 +146,35 @@ final class Client {
 		if ( ! $meta->is_ok() ) {
 			return null;
 		}
-		$data = $meta->data();
-		if ( ! isset( $data['resources'] ) || ! is_array( $data['resources'] ) ) {
-			return array();
+		$data      = $meta->data();
+		$resources = array();
+		if ( isset( $data['resources'] ) && is_array( $data['resources'] ) ) {
+			foreach ( $data['resources'] as $resource ) {
+				if ( in_array( $resource, self::RESOURCES, true ) && ! in_array( $resource, $resources, true ) ) {
+					$resources[] = $resource;
+				}
+			}
 		}
-		return array_values( array_intersect( $data['resources'], self::RESOURCES ) );
+		return $resources;
 	}
 
 	/**
-	 * @param string $endpoint The endpoint.
-	 * @throws \InvalidArgumentException When v1 has no such endpoint.
+	 * @param array|null    $copy  The copy to serve, if any.
+	 * @param bool          $stale Whether a served copy is past its ttl.
+	 * @param EndpointState $state The endpoint's state.
+	 * @param int           $wait  Seconds until the next fetch may be tried.
 	 */
-	private function check_endpoint( string $endpoint ): void {
-		if ( ! in_array( $endpoint, self::ENDPOINTS, true ) ) {
-			throw new \InvalidArgumentException( esc_html( "Unknown HestaHub endpoint: $endpoint" ) );
-		}
+	private function result( $copy, bool $stale, EndpointState $state, int $wait ): Result {
+		return new Result(
+			array(
+				'copy'          => $copy,
+				'stale'         => $copy && $stale,
+				'failure'       => $state->failure(),
+				'retry_after'   => $wait,
+				'last_success'  => $state->last_success(),
+				'failing_since' => $state->failing_since(),
+			)
+		);
 	}
 
 	/**
@@ -169,104 +188,26 @@ final class Client {
 	}
 
 	/**
-	 * The result of a failed or skipped fetch: the cached copy while there is one.
-	 *
-	 * @param array|null $cached      The cached copy.
-	 * @param Failure    $failure     Why the fetch failed.
-	 * @param int        $retry_after Seconds until the next fetch may be tried.
-	 */
-	private function failed( $cached, Failure $failure, int $retry_after ): Result {
-		return $cached
-			? Result::ok( $cached, true, $failure, $retry_after )
-			: Result::failed( $failure, $retry_after );
-	}
-
-	/**
-	 * Records a failure and returns how long to wait before the next fetch.
-	 *
-	 * @param string     $endpoint The endpoint.
-	 * @param Failure    $failure  The failure.
-	 * @param array|null $state    The endpoint's back-off before this failure.
-	 * @param int        $now      The current time.
-	 */
-	private function back_off( string $endpoint, Failure $failure, $state, int $now ): int {
-		if ( Failure::VERDICT === $failure->kind() ) {
-			$outages = 0;
-			$wait    = self::MAX_RETRY;
-		} else {
-			$outages = ( $state ? $state['outages'] : 0 ) + 1;
-			$wait    = (int) min( self::FIRST_RETRY * pow( 2, min( $outages - 1, 16 ) ), self::MAX_RETRY );
-		}
-
-		$all              = $this->all_states();
-		$all[ $endpoint ] = array(
-			'failure'  => $failure->to_array(),
-			'outages'  => $outages,
-			'retry_at' => $now + $wait,
-		);
-		update_option( self::STATE_OPTION, $all, false );
-		return $wait;
-	}
-
-	/**
-	 * An endpoint's back-off, or null when its last fetch succeeded.
+	 * The cached copy of an endpoint, unless it is past stale_ttl or was
+	 * fetched for another Tenant.
 	 *
 	 * @param string $endpoint The endpoint.
-	 * @return array|null failure (Failure), outages and retry_at.
-	 */
-	private function state( string $endpoint ): ?array {
-		$all = $this->all_states();
-		if ( ! isset( $all[ $endpoint ] ) || ! is_array( $all[ $endpoint ] ) ) {
-			return null;
-		}
-		$failure = Failure::from_array( isset( $all[ $endpoint ]['failure'] ) ? $all[ $endpoint ]['failure'] : null );
-		if ( ! $failure ) {
-			return null;
-		}
-		return array(
-			'failure'  => $failure,
-			'outages'  => (int) ( isset( $all[ $endpoint ]['outages'] ) ? $all[ $endpoint ]['outages'] : 0 ),
-			'retry_at' => (int) ( isset( $all[ $endpoint ]['retry_at'] ) ? $all[ $endpoint ]['retry_at'] : 0 ),
-		);
-	}
-
-	/**
-	 * Forgets an endpoint's back-off.
-	 *
-	 * @param string $endpoint The endpoint.
-	 */
-	private function clear_state( string $endpoint ): void {
-		$all = $this->all_states();
-		if ( isset( $all[ $endpoint ] ) ) {
-			unset( $all[ $endpoint ] );
-			update_option( self::STATE_OPTION, $all, false );
-		}
-	}
-
-	private function all_states(): array {
-		$all = get_option( self::STATE_OPTION, array() );
-		return is_array( $all ) ? $all : array();
-	}
-
-	/**
-	 * The cached copy of an endpoint, unless it is past stale_ttl.
-	 *
-	 * @param string $endpoint The endpoint.
+	 * @param string $tenant   The Tenant's subdomain.
 	 * @param int    $now      The current time.
 	 */
-	private function cached( string $endpoint, int $now ): ?array {
+	private function cached( string $endpoint, string $tenant, int $now ): ?array {
 		$cached = get_transient( $this->cache_key( $endpoint ) );
-		if ( ! is_array( $cached ) || ! isset( $cached['data'], $cached['ttl'], $cached['stale_ttl'], $cached['fetched_at'] ) ) {
+		if ( ! is_array( $cached ) || ! isset( $cached['data'], $cached['ttl'], $cached['stale_ttl'], $cached['fetched_at'], $cached['tenant'] ) ) {
 			return null;
 		}
-		if ( $now >= $cached['fetched_at'] + $cached['stale_ttl'] ) {
+		if ( $cached['tenant'] !== $tenant || $now >= $cached['fetched_at'] + $cached['stale_ttl'] ) {
 			return null;
 		}
 		return $cached;
 	}
 
 	/**
-	 * Requests an endpoint once and reads the envelope.
+	 * Requests an endpoint once and reads the envelope field by field.
 	 *
 	 * @param string $endpoint The endpoint.
 	 * @return array|Failure The success envelope's data, revision, currency,
@@ -296,8 +237,8 @@ final class Client {
 			$error = is_array( $body ) && isset( $body['error'] ) && is_array( $body['error'] ) ? $body['error'] : array();
 			return Failure::from_status(
 				$status,
-				isset( $error['code'] ) && is_string( $error['code'] ) ? $error['code'] : '',
-				isset( $error['message'] ) && is_string( $error['message'] ) ? $error['message'] : ''
+				(string) self::typed( $error, 'code', 'is_string' ),
+				(string) self::typed( $error, 'message', 'is_string' )
 			);
 		}
 
@@ -306,25 +247,48 @@ final class Client {
 			return new Failure( Failure::OUTAGE, $status, '', '' );
 		}
 
-		$cache = isset( $body['cache'] ) && is_array( $body['cache'] ) ? $body['cache'] : array();
+		$cache = self::typed( $body, 'cache', 'is_array' );
 		return array(
 			'data'               => $body['data'],
-			'revision'           => isset( $body['revision'] ) && is_string( $body['revision'] ) ? $body['revision'] : null,
-			'currency'           => isset( $body['currency'] ) && is_string( $body['currency'] ) ? $body['currency'] : null,
-			'prices_include_tax' => isset( $body['prices_include_tax'] ) && is_bool( $body['prices_include_tax'] ) ? $body['prices_include_tax'] : null,
-			'ttl'                => $this->seconds( $cache, 'ttl' ),
-			'stale_ttl'          => $this->seconds( $cache, 'stale_ttl' ),
+			'revision'           => self::typed( $body, 'revision', 'is_string' ),
+			'currency'           => self::typed( $body, 'currency', 'is_string' ),
+			'prices_include_tax' => self::typed( $body, 'prices_include_tax', 'is_bool' ),
+			'ttl'                => self::seconds( $cache, 'ttl' ),
+			'stale_ttl'          => self::seconds( $cache, 'stale_ttl' ),
 		);
 	}
 
 	/**
-	 * A non-negative number of seconds from the body's cache object, 0 when missing.
+	 * A field of a decoded object if it has the expected type, else null.
 	 *
-	 * @param array  $cache The body's cache object.
-	 * @param string $key   ttl or stale_ttl.
+	 * @param mixed    $object A decoded JSON object (array), or anything else.
+	 * @param string   $key    The field.
+	 * @param callable $is     Type check, e.g. is_string.
+	 * @return mixed
 	 */
-	private function seconds( array $cache, string $key ): int {
-		return isset( $cache[ $key ] ) && is_int( $cache[ $key ] ) && $cache[ $key ] > 0 ? $cache[ $key ] : 0;
+	private static function typed( $object, string $key, callable $is ) {
+		return is_array( $object ) && isset( $object[ $key ] ) && $is( $object[ $key ] ) ? $object[ $key ] : null;
+	}
+
+	/**
+	 * A positive number of seconds from the body's cache object, 0 when missing.
+	 *
+	 * @param array|null $cache The body's cache object.
+	 * @param string     $key   ttl or stale_ttl.
+	 */
+	private static function seconds( $cache, string $key ): int {
+		$seconds = self::typed( $cache, $key, 'is_int' );
+		return null !== $seconds && $seconds > 0 ? $seconds : 0;
+	}
+
+	/**
+	 * @param string $endpoint The endpoint.
+	 * @throws \InvalidArgumentException When v1 has no such endpoint.
+	 */
+	private function check_endpoint( string $endpoint ): void {
+		if ( ! in_array( $endpoint, self::ENDPOINTS, true ) ) {
+			throw new \InvalidArgumentException( esc_html( "Unknown HestaHub endpoint: $endpoint" ) );
+		}
 	}
 
 	private function cache_key( string $endpoint ): string {
