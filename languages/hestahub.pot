@@ -1,0 +1,127 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the HestaHub package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: HestaHub\n"
+"Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
+"POT-Creation-Date: 2026-11-23 23:26+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "HestaHub"
+msgstr ""
+
+msgid "The HestaHub address must be your subdomain: the part before .hestahub.com, made of letters, digits and hyphens."
+msgstr ""
+
+msgid "A base path needs pretty permalinks. While permalinks are set to “Plain”, no URL under a base path can work. Choose another structure under Settings → Permalinks first."
+msgstr ""
+
+msgid "Apartments and Clinics need different base paths."
+msgstr ""
+
+msgid "Sorry, you are not allowed to manage HestaHub."
+msgstr ""
+
+msgid "Connection"
+msgstr ""
+
+msgid "HestaHub address"
+msgstr ""
+
+msgid "Your HestaHub subdomain."
+msgstr ""
+
+msgid "API key"
+msgstr ""
+
+msgid "Base paths"
+msgstr ""
+
+msgid "Where your Apartments and Clinics appear on this site. Empty until you set one: until then, the plugin owns no URL."
+msgstr ""
+
+msgid "Maintenance"
+msgstr ""
+
+msgid "“Refresh now” discards the copies this site keeps, including the one that may be keeping the site up while HestaHub cannot be reached. “Test connection” asks HestaHub directly and changes nothing."
+msgstr ""
+
+msgid "Test connection"
+msgstr ""
+
+msgid "Refresh now"
+msgstr ""
+
+msgid "What this site holds"
+msgstr ""
+
+msgid "Read from the environment variable HESTAHUB_API_KEY. Change it there."
+msgstr ""
+
+msgid "Read from the constant HESTAHUB_API_KEY in wp-config.php. Change it there."
+msgstr ""
+
+msgid "Stored in the database. Leave blank to keep it; enter a new key to replace it."
+msgstr ""
+
+msgid "Not set yet. You can also set it in wp-config.php as the constant HESTAHUB_API_KEY, or as an environment variable of that name."
+msgstr ""
+
+msgid "The base paths can be set once the connection works: HestaHub says which of Apartments and Clinics you have."
+msgstr ""
+
+msgid "HestaHub lists neither Apartments nor Clinics for you."
+msgstr ""
+
+#. translators: %s: link to the Permalinks settings.
+#, php-format
+msgid "Permalinks are set to “Plain”, so no URL under a base path can work. Choose another structure under %s to set a base path."
+msgstr ""
+
+msgid "Settings → Permalinks"
+msgstr ""
+
+msgid "The cached copies are discarded. The next page view fetches fresh data."
+msgstr ""
+
+msgid "The connection failed."
+msgstr ""
+
+msgid "Enter the HestaHub address and an API key first."
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#, php-format
+msgid "HestaHub answered with HTTP status %d."
+msgstr ""
+
+msgid "Tenant"
+msgstr ""
+
+msgid "Revision"
+msgstr ""
+
+msgid "Minimum plugin version"
+msgstr ""
+
+msgid "The connection works."
+msgstr ""
+
+msgid "None"
+msgstr ""
+
+msgid "Clinics"
+msgstr ""
+
+msgid "Apartments"
+msgstr ""

@@ -127,6 +127,18 @@ final class Client {
 	}
 
 	/**
+	 * The data of the copy the plugin holds for an endpoint, fresh or stale,
+	 * without fetching. Null when it holds none. For the settings screen.
+	 *
+	 * @param string $endpoint meta, apartments, availability or clinics.
+	 */
+	public function held( string $endpoint ): ?array {
+		$this->check_endpoint( $endpoint );
+		$copy = $this->cached( $endpoint, $this->credentials->tenant(), $this->now() );
+		return $copy ? $copy['data'] : null;
+	}
+
+	/**
 	 * Discards every cached copy and lets the next read of every endpoint
 	 * fetch at once. For "refresh now". It also discards the stale copy that
 	 * may be keeping the site up.

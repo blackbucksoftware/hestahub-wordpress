@@ -45,6 +45,14 @@ jobs:
       - uses: actions/checkout@v5
       - run: bin/vendor-schemas.sh --check
 
+  i18n:
+    name: Translations match the code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: sudo apt-get install -y gettext
+      - run: bin/i18n.sh --check
+
   test:
     name: PHPUnit (PHP ${{ matrix.php }}, WP ${{ matrix.wp }})
     runs-on: ubuntu-latest
@@ -75,6 +83,8 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: mysqli
           coverage: none
+      # WporgBuildTest runs bin/build-zip.sh, which compiles the .po files.
+      - run: sudo apt-get install -y gettext
       - run: composer install --no-interaction --no-progress
       - run: bin/install-wp-tests.sh wordpress_test root root 127.0.0.1:3306 ${{ matrix.wp }}
       - run: composer test

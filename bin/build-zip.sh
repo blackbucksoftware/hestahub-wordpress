@@ -13,6 +13,7 @@
 #
 # With a tag (e.g. v0.1.0), fails unless it matches the plugin's version.
 # The version must agree in hestahub.php, src/Plugin.php and readme.txt.
+# Compiles languages/*.po to .mo (needs gettext).
 # BUILD_DIR overrides the output folder (default: build/). It is emptied first.
 
 set -euo pipefail
@@ -56,7 +57,10 @@ DIR="$OUT/hestahub"
 rm -rf "$OUT"
 mkdir -p "$DIR"
 
-cp -R hestahub.php uninstall.php readme.txt LICENSE src composer.json composer.lock "$DIR/"
+cp -R hestahub.php uninstall.php readme.txt LICENSE src languages composer.json composer.lock "$DIR/"
+for po in "$DIR"/languages/*.po; do
+	msgfmt --check -o "${po%.po}.mo" "$po"
+done
 composer install --working-dir="$DIR" --no-dev --classmap-authoritative --no-interaction --quiet
 rm "$DIR/composer.json" "$DIR/composer.lock"
 
