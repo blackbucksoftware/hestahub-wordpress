@@ -21,6 +21,20 @@ The plugin is a **tolerant reader**: it reads field by field, ignores unknown ke
 - **Rendering:** structural CSS with no colour opinions, a few CSS custom properties, and PHP templates a theme overrides by copying them into `<theme>/hestahub/` (core's `locate_template()`). A shortcode and a template tag in v1; a block only once a Tenant runs a block theme.
 - `readme.txt` in WordPress readme format from the first release, disclosing the external service and linking the contract.
 
+## Commands
+
+Needs PHP, Composer and a MySQL or MariaDB server.
+
+- **Install:** `composer install`, then `bin/install-wp-tests.sh <db-name> <db-user> <db-pass> [db-host] [wp-version]` once. It puts WordPress and its test suite in `.wp-tests/` and creates the database. `wp-version` is `latest` or a release such as `6.8`.
+- **Test:** `composer test` (PHPUnit with the WordPress test suite); `WP_MULTISITE=1 composer test` for multisite. The suite caps PHPUnit at 9, and `composer.lock` is resolved for PHP 7.4: update dependencies with `composer update`, never by hand.
+- **Lint and compatibility:** `composer lint` (syntax) and `composer compat` (PHPCompatibility, `testVersion 7.4-`).
+- **Build:** `bin/build-zip.sh [tag]` writes `build/hestahub-<version>.zip`. The version must agree in `hestahub.php`, `Plugin::VERSION` and the `readme.txt` Stable tag, and match the tag if one is given. Pushing a `v*` tag runs the same script in CI and attaches the zip to a GitHub Release.
+
+## Code conventions
+
+- Features implement `HestaHub\Feature`, are added in `hestahub.php`, and hook into WordPress in `register()`, which runs once on `plugins_loaded`.
+- Every option, transient and site transient the plugin stores is named `hestahub_…`. `uninstall.php` deletes by that prefix.
+
 ## Public repository
 
 This repo, its issues and pull requests are public. Don't name a Tenant's people. Don't describe a Tenant's hosting or website beyond what is needed to state a requirement. Never commit an API key, not even a revoked one.
