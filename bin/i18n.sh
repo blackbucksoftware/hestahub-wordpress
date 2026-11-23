@@ -65,5 +65,6 @@ cp "$TMP" "$POT"
 for po in languages/hestahub-*.po; do
 	[ -e "$po" ] || continue
 	msgmerge --quiet --update --backup=none --no-wrap "$po" "$POT"
+	msgattrib --no-obsolete --no-wrap -o "$po" "$po"
 done
 echo "$POT"

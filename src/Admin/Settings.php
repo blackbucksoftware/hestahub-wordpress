@@ -21,8 +21,8 @@ final class Settings implements Feature {
 	const GROUP      = 'hestahub';
 	const CAPABILITY = 'manage_options';
 
-	const TENANT          = 'hestahub_tenant';
-	const API_KEY         = 'hestahub_api_key';
+	const TENANT          = Credentials::TENANT_OPTION;
+	const API_KEY         = Credentials::KEY_OPTION;
 	const APARTMENTS_BASE = 'hestahub_apartments_base';
 	const CLINICS_BASE    = 'hestahub_clinics_base';
 
@@ -40,12 +40,11 @@ final class Settings implements Feature {
 	/** @var Credentials */
 	private $credentials;
 
-	/**
-	 * What the last action on this request did: refreshed, or a test Result.
-	 *
-	 * @var string|Result|null
-	 */
-	private $outcome = null;
+	/** @var bool Whether "refresh now" ran on this request. */
+	private $refreshed = false;
+
+	/** @var Result|null What "test connection" found on this request. */
+	private $tested = null;
 
 	public function __construct( Client $client, Credentials $credentials ) {
 		$this->client      = $client;
@@ -76,7 +75,7 @@ final class Settings implements Feature {
 			array(
 				'type'              => 'string',
 				'default'           => '',
-				'sanitize_callback' => array( $this, 'sanitize_key' ),
+				'sanitize_callback' => array( $this, 'sanitize_api_key' ),
 			)
 		);
 		foreach ( self::BASES as $resource => $option ) {
@@ -106,7 +105,7 @@ final class Settings implements Feature {
 			array( $this, 'render' )
 		);
 		if ( $hook ) {
-			add_action( 'load-' . $hook, array( $this, 'act' ) );
+			add_action( 'load-' . $hook, array( $this, 'handle_action' ) );
 		}
 	}
 
@@ -143,9 +142,9 @@ final class Settings implements Feature {
 	 *
 	 * @param mixed $value The submitted value; null when the form left it out.
 	 */
-	public function sanitize_key( $value ): string {
+	public function sanitize_api_key( $value ): string {
 		$old = $this->stored( self::API_KEY );
-		if ( ! is_string( $value ) || Credentials::SOURCE_ENVIRONMENT === $this->credentials->key_source() || Credentials::SOURCE_CONSTANT === $this->credentials->key_source() ) {
+		if ( ! is_string( $value ) || $this->credentials->is_key_external() ) {
 			return $old;
 		}
 		$key = sanitize_text_field( $value );
@@ -170,7 +169,7 @@ final class Settings implements Feature {
 		if ( '' === $base || $base === $old ) {
 			return $base;
 		}
-		if ( '' === (string) get_option( 'permalink_structure' ) ) {
+		if ( $this->plain_permalinks() ) {
 			add_settings_error(
 				$option,
 				$option . '_plain_permalinks',
@@ -195,7 +194,7 @@ final class Settings implements Feature {
 	 * Runs "refresh now" or "test connection" when the page is posted to.
 	 * Hooked to the page's load action, before any output.
 	 */
-	public function act(): void {
+	public function handle_action(): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified below.
 		$action = isset( $_POST['hestahub_action'] ) ? sanitize_key( wp_unslash( $_POST['hestahub_action'] ) ) : '';
 		if ( 'refresh' !== $action && 'test' !== $action ) {
@@ -208,10 +207,10 @@ final class Settings implements Feature {
 
 		if ( 'refresh' === $action ) {
 			$this->client->flush();
-			$this->outcome = 'refreshed';
+			$this->refreshed = true;
 			return;
 		}
-		$this->outcome = $this->client->fetch_live( 'meta' );
+		$this->tested = $this->client->fetch_live( 'meta' );
 	}
 
 	/**
@@ -267,7 +266,7 @@ final class Settings implements Feature {
 			</form>
 
 			<h2><?php esc_html_e( 'What this site holds', 'hestahub' ); ?></h2>
-			<?php $this->render_held( $resources ); ?>
+			<?php $this->render_held(); ?>
 		</div>
 		<?php
 	}
@@ -276,7 +275,7 @@ final class Settings implements Feature {
 		$source = $this->credentials->key_source();
 		$masked = $this->mask( $this->credentials->key() );
 
-		if ( Credentials::SOURCE_ENVIRONMENT === $source || Credentials::SOURCE_CONSTANT === $source ) {
+		if ( $this->credentials->is_key_external() ) {
 			?>
 			<input type="text" id="hestahub-api-key" value="<?php echo esc_attr( $masked ); ?>" class="regular-text" readonly>
 			<p class="description">
@@ -317,7 +316,7 @@ final class Settings implements Feature {
 			echo '<p class="description">' . esc_html__( 'HestaHub lists neither Apartments nor Clinics for you.', 'hestahub' ) . '</p>';
 			return;
 		}
-		$plain = '' === (string) get_option( 'permalink_structure' );
+		$plain = $this->plain_permalinks();
 		if ( $plain ) {
 			echo '<div class="notice notice-warning inline"><p>';
 			printf(
@@ -327,15 +326,11 @@ final class Settings implements Feature {
 			);
 			echo '</p></div>';
 		}
-		$labels = array(
-			'apartments' => __( 'Apartments', 'hestahub' ),
-			'clinics'    => __( 'Clinics', 'hestahub' ),
-		);
 		echo '<table class="form-table" role="presentation">';
 		foreach ( $resources as $resource ) {
 			$option = self::BASES[ $resource ];
 			$id     = 'hestahub-' . $resource . '-base';
-			echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( $labels[ $resource ] ) . '</label></th><td>';
+			echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( $this->label( $resource ) ) . '</label></th><td>';
 			echo '<code>' . esc_html( trailingslashit( home_url() ) ) . '</code>';
 			echo '<input type="text" id="' . esc_attr( $id ) . '" name="' . esc_attr( $option ) . '" value="' . esc_attr( $this->stored( $option ) ) . '" class="regular-text" spellcheck="false"' . ( $plain ? ' readonly' : '' ) . '>';
 			echo '</td></tr>';
@@ -344,14 +339,14 @@ final class Settings implements Feature {
 	}
 
 	private function render_outcome(): void {
-		if ( 'refreshed' === $this->outcome ) {
+		if ( $this->refreshed ) {
 			echo '<div class="notice notice-success inline"><p>' . esc_html__( 'The cached copies are discarded. The next page view fetches fresh data.', 'hestahub' ) . '</p></div>';
 			return;
 		}
-		if ( ! $this->outcome instanceof Result ) {
+		if ( null === $this->tested ) {
 			return;
 		}
-		$result = $this->outcome;
+		$result = $this->tested;
 		if ( ! $result->is_ok() ) {
 			$failure = $result->failure();
 			echo '<div class="notice notice-error inline"><p><strong>' . esc_html__( 'The connection failed.', 'hestahub' ) . '</strong></p><p>';
@@ -361,7 +356,7 @@ final class Settings implements Feature {
 				echo '<code>' . esc_html( $failure->code() ) . '</code> ' . esc_html( $failure->message() );
 			} elseif ( $failure->status() ) {
 				/* translators: %d: HTTP status code. */
-				echo esc_html( sprintf( __( 'HestaHub answered with HTTP status %d.', 'hestahub' ), $failure->status() ) );
+				echo esc_html( trim( sprintf( __( 'HestaHub answered with HTTP status %d.', 'hestahub' ), $failure->status() ) . ' ' . $failure->message(), ' ' ) );
 			} else {
 				echo esc_html( $failure->message() );
 			}
@@ -371,7 +366,7 @@ final class Settings implements Feature {
 		$data   = $result->data();
 		$rows   = array(
 			__( 'Tenant', 'hestahub' )                 => isset( $data['tenant']['name'] ) && is_string( $data['tenant']['name'] ) ? $data['tenant']['name'] : '',
-			__( 'Revision', 'hestahub' )               => isset( $data['revision'] ) && is_string( $data['revision'] ) ? $data['revision'] : (string) $result->revision(),
+			__( 'Revision', 'hestahub' )               => (string) $result->revision(),
 			__( 'Minimum plugin version', 'hestahub' ) => isset( $data['minimum_plugin_version'] ) && is_string( $data['minimum_plugin_version'] ) ? $data['minimum_plugin_version'] : '',
 			__( 'API key', 'hestahub' )                => $this->mask( $this->credentials->key() ),
 		);
@@ -383,43 +378,37 @@ final class Settings implements Feature {
 	}
 
 	/**
-	 * @param string[]|null $resources What meta lists, or null while unknown.
+	 * The slugs of the copies the plugin holds, whatever meta says now.
 	 */
-	private function render_held( ?array $resources ): void {
-		$labels = array(
-			'apartments' => __( 'Apartments', 'hestahub' ),
-			'clinics'    => __( 'Clinics', 'hestahub' ),
-		);
+	private function render_held(): void {
 		echo '<table class="form-table" role="presentation">';
-		foreach ( $resources ? $resources : array() as $resource ) {
-			$slugs = $this->held_slugs( $resource );
-			echo '<tr><th scope="row">' . esc_html( $labels[ $resource ] ) . '</th><td>';
+		foreach ( Client::RESOURCES as $resource ) {
+			$slugs = array();
+			foreach ( (array) $this->client->held( $resource ) as $item ) {
+				if ( is_array( $item ) && isset( $item['slug'] ) && is_string( $item['slug'] ) ) {
+					$slugs[] = $item['slug'];
+				}
+			}
+			echo '<tr><th scope="row">' . esc_html( $this->label( $resource ) ) . '</th><td>';
 			echo $slugs
 				? '<code>' . implode( '</code>, <code>', array_map( 'esc_html', $slugs ) ) . '</code>'
 				: esc_html__( 'None', 'hestahub' );
 			echo '</td></tr>';
 		}
 		echo '</table>';
-		if ( ! $resources ) {
-			echo '<p>' . esc_html__( 'Nothing yet.', 'hestahub' ) . '</p>';
-		}
 	}
 
 	/**
-	 * The slugs of the copy the plugin serves for a resource.
+	 * A resource's name as shown.
 	 *
 	 * @param string $resource apartments or clinics.
-	 * @return string[]
 	 */
-	private function held_slugs( string $resource ): array {
-		$result = $this->client->get( $resource );
-		$slugs  = array();
-		foreach ( $result->is_ok() ? $result->data() : array() as $item ) {
-			if ( is_array( $item ) && isset( $item['slug'] ) && is_string( $item['slug'] ) ) {
-				$slugs[] = $item['slug'];
-			}
-		}
-		return $slugs;
+	private function label( string $resource ): string {
+		return 'clinics' === $resource ? __( 'Clinics', 'hestahub' ) : __( 'Apartments', 'hestahub' );
+	}
+
+	private function plain_permalinks(): bool {
+		return '' === (string) get_option( 'permalink_structure' );
 	}
 
 	/**

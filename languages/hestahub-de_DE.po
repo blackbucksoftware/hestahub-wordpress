@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-23 23:22+0100\n"
+"POT-Creation-Date: 2026-11-23 23:26+0100\n"
 "PO-Revision-Date: 2026-11-23 00:00+0000\n"
 "Last-Translator: Blackbuck Software\n"
 "Language-Team: German\n"
@@ -88,12 +88,6 @@ msgstr "Die Permalinks stehen auf „Einfach“, daher kann keine URL unter eine
 msgid "Settings → Permalinks"
 msgstr "Einstellungen → Permalinks"
 
-msgid "Apartments"
-msgstr "Ferienwohnungen"
-
-msgid "Clinics"
-msgstr "Kurse"
-
 msgid "The cached copies are discarded. The next page view fetches fresh data."
 msgstr "Die zwischengespeicherten Kopien sind verworfen. Der nächste Seitenaufruf holt frische Daten."
 
@@ -123,5 +117,8 @@ msgstr "Die Verbindung funktioniert."
 msgid "None"
 msgstr "Keine"
 
-msgid "Nothing yet."
-msgstr "Noch nichts."
+msgid "Clinics"
+msgstr "Kurse"
+
+msgid "Apartments"
+msgstr "Ferienwohnungen"

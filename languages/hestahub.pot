@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-23 23:22+0100\n"
+"POT-Creation-Date: 2026-11-23 23:26+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -91,12 +91,6 @@ msgstr ""
 msgid "Settings → Permalinks"
 msgstr ""
 
-msgid "Apartments"
-msgstr ""
-
-msgid "Clinics"
-msgstr ""
-
 msgid "The cached copies are discarded. The next page view fetches fresh data."
 msgstr ""
 
@@ -126,5 +120,8 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-msgid "Nothing yet."
+msgid "Clinics"
+msgstr ""
+
+msgid "Apartments"
 msgstr ""

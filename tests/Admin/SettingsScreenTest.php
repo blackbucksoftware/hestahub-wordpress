@@ -67,7 +67,6 @@ final class SettingsScreenTest extends WP_UnitTestCase {
 
 	public function test_a_base_path_is_offered_only_for_a_resource_meta_lists() {
 		$this->respond( 200, $this->only_apartments() );
-		$this->respond( 200, $this->example( 'apartments' ) );
 
 		$page = $this->render();
 
@@ -103,6 +102,25 @@ final class SettingsScreenTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<code>dressurkurs-2027-03-14</code>', $page );
 	}
 
+	public function test_held_slugs_show_even_while_meta_fails() {
+		$client = $this->client();
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$client->get( 'apartments' );
+		$this->respond( 500 ); // meta, for the screen.
+
+		$page = $this->render_with( $client );
+
+		$this->assertStringContainsString( '<code>hoettur</code>', $page );
+	}
+
+	public function test_the_screen_never_fetches_apartments_or_clinics() {
+		$this->respond( 200, $this->example( 'meta' ) );
+
+		$this->render();
+
+		$this->assertCount( 1, $this->requests, 'Only meta, to know which base paths to offer.' );
+	}
+
 	public function test_test_connection_shows_tenant_revision_minimum_version_and_key() {
 		$this->respond_all();
 		$this->respond( 200, $this->example( 'meta' ) ); // The live call.
@@ -114,6 +132,28 @@ final class SettingsScreenTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '2026-11-23', $page );
 		$this->assertStringContainsString( '1.0.0', $page );
 		$this->assertStringContainsString( '••••8c9d', $page );
+	}
+
+	public function test_test_connection_reads_the_revision_from_the_envelope() {
+		$this->respond( 200, $this->example( 'meta', function ( $body ) {
+			$body['revision']         = '2027-01-01';
+			$body['data']['revision'] = '2026-11-23';
+			return $body;
+		} ) ); // The live call.
+		$this->post( 'test' );
+		$this->respond( 200, $this->example( 'meta' ) ); // meta, for the screen.
+
+		$this->assertStringContainsString( '2027-01-01', $this->render() );
+	}
+
+	public function test_test_connection_shows_status_and_message_without_a_code() {
+		$this->respond( 502, 'Bad Gateway' ); // The live call.
+		$this->post( 'test' );
+		$this->respond( 502, 'Bad Gateway' ); // meta, for the screen.
+
+		$page = $this->render();
+
+		$this->assertStringContainsString( '502', $page );
 	}
 
 	public function test_test_connection_shows_a_failures_code_and_message() {
@@ -165,16 +205,20 @@ final class SettingsScreenTest extends WP_UnitTestCase {
 		$_REQUEST['_wpnonce']     = 'forged';
 
 		$this->expectException( WPDieException::class );
-		$this->settings()->act();
+		$this->settings()->handle_action();
 	}
 
 	/**
-	 * Queues meta, apartments and clinics, in the order the screen reads them.
+	 * Caches apartments and clinics as a visitor's page view would, and
+	 * queues meta for the screen.
 	 */
 	private function respond_all(): void {
-		$this->respond( 200, $this->example( 'meta' ) );
+		$client = $this->client();
 		$this->respond( 200, $this->example( 'apartments' ) );
 		$this->respond( 200, $this->example( 'clinics' ) );
+		$client->get( 'apartments' );
+		$client->get( 'clinics' );
+		$this->respond( 200, $this->example( 'meta' ) );
 	}
 
 	private function only_apartments(): string {
@@ -197,11 +241,16 @@ final class SettingsScreenTest extends WP_UnitTestCase {
 		$_POST['hestahub_action'] = $action;
 		$_REQUEST['_wpnonce']     = wp_create_nonce( 'hestahub_' . $action );
 		$this->settings = $this->settings( $client );
-		$this->settings->act();
+		$this->settings->handle_action();
 	}
 
 	/** @var Settings|null The page an action was posted to. */
 	private $settings;
+
+	private function render_with( Client $client ): string {
+		$this->settings = $this->settings( $client );
+		return $this->render();
+	}
 
 	private function render(): string {
 		$settings = $this->settings ? $this->settings : $this->settings();
