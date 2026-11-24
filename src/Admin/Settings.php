@@ -330,7 +330,7 @@ final class Settings implements Feature {
 		foreach ( $resources as $resource ) {
 			$option = self::BASES[ $resource ];
 			$id     = 'hestahub-' . $resource . '-base';
-			echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( $this->label( $resource ) ) . '</label></th><td>';
+			echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( self::label( $resource ) ) . '</label></th><td>';
 			echo '<code>' . esc_html( trailingslashit( home_url() ) ) . '</code>';
 			echo '<input type="text" id="' . esc_attr( $id ) . '" name="' . esc_attr( $option ) . '" value="' . esc_attr( $this->stored( $option ) ) . '" class="regular-text" spellcheck="false"' . ( $plain ? ' readonly' : '' ) . '>';
 			echo '</td></tr>';
@@ -389,7 +389,7 @@ final class Settings implements Feature {
 					$slugs[] = $item['slug'];
 				}
 			}
-			echo '<tr><th scope="row">' . esc_html( $this->label( $resource ) ) . '</th><td>';
+			echo '<tr><th scope="row">' . esc_html( self::label( $resource ) ) . '</th><td>';
 			echo $slugs
 				? '<code>' . implode( '</code>, <code>', array_map( 'esc_html', $slugs ) ) . '</code>'
 				: esc_html__( 'None', 'hestahub' );
@@ -403,7 +403,7 @@ final class Settings implements Feature {
 	 *
 	 * @param string $resource apartments or clinics.
 	 */
-	private function label( string $resource ): string {
+	public static function label( string $resource ): string {
 		return 'clinics' === $resource ? __( 'Clinics', 'hestahub' ) : __( 'Apartments', 'hestahub' );
 	}
 
