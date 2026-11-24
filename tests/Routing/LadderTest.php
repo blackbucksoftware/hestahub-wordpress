@@ -55,6 +55,7 @@ final class LadderTest extends WP_UnitTestCase {
 		$this->respond( 200, $this->example( 'apartments' ) );
 		$this->client()->get( 'apartments' );
 		$this->respond( 500 );
+		$this->respond( 500 ); // The page's calendar.
 		$this->now += DAY_IN_SECONDS; // Past the example's ttl, within its stale_ttl.
 
 		$this->request( '/wohnungen/hoettur/' );

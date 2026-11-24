@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 12:36+0100\n"
+"POT-Creation-Date: 2026-11-24 13:07+0100\n"
 "PO-Revision-Date: 2026-11-23 00:00+0000\n"
 "Last-Translator: Blackbuck Software\n"
 "Language-Team: German\n"
@@ -123,6 +123,25 @@ msgstr "Kurse"
 msgid "Apartments"
 msgstr "Ferienwohnungen"
 
+#. translators: %s: the minimum number of nights. An open-ended tier, e.g. "7+ nights".
+#, php-format
+msgid "%s+ night"
+msgid_plural "%s+ nights"
+msgstr[0] "ab %s Nacht"
+msgstr[1] "ab %s Nächten"
+
+#. translators: %s: a number of nights.
+#, php-format
+msgid "%s night"
+msgid_plural "%s nights"
+msgstr[0] "%s Nacht"
+msgstr[1] "%s Nächte"
+
+#. translators: 1: the minimum, 2: the maximum number of nights, e.g. "3–6 nights".
+#, php-format
+msgid "%1$s–%2$s nights"
+msgstr "%1$s–%2$s Nächte"
+
 #. translators: 1: Apartments or Clinics, 2: the base path, e.g. /apartments/.
 #, php-format
 msgid "The %1$s base path %2$s now shadows content on this site."
@@ -140,6 +159,51 @@ msgstr "Nebenbei ebenfalls verdeckt: die Feed-, Embed- und Trackback-URLs der Se
 msgid "Dismiss"
 msgstr "Ausblenden"
 
+msgid "All prices include VAT."
+msgstr "Alle Preise inkl. MwSt."
+
+#. translators: %s: floor area in square metres.
+#, php-format
+msgid "%s m²"
+msgstr "%s m²"
+
+#. translators: %s: the maximum number of persons.
+#, php-format
+msgid "Up to %s person"
+msgid_plural "Up to %s persons"
+msgstr[0] "Bis zu %s Person"
+msgstr[1] "Bis zu %s Personen"
+
+msgid "Apartment"
+msgstr "Ferienwohnung"
+
+msgid "Final cleaning"
+msgstr "Endreinigung"
+
+#. translators: 1: a night range, e.g. "3–6 nights", 2: the price per night.
+#, php-format
+msgid "%1$s: %2$s per night"
+msgstr "%1$s: %2$s pro Nacht"
+
+#. translators: 1: a package's name, 2: its number of nights, 3: its total price.
+#, php-format
+msgid "%1$s (%2$s night): %3$s"
+msgid_plural "%1$s (%2$s nights): %3$s"
+msgstr[0] "%1$s (%2$s Nacht): %3$s"
+msgstr[1] "%1$s (%2$s Nächte): %3$s"
+
+msgid "Floor plan"
+msgstr "Grundriss"
+
+msgid "Prices"
+msgstr "Preise"
+
+msgid "Availability"
+msgstr "Belegung"
+
+msgid "Book now"
+msgstr "Jetzt buchen"
+
 msgid "There is nothing to show here at the moment. Please check back later."
 msgstr "Hier gibt es gerade nichts zu sehen. Schau bitte später wieder vorbei."
 
@@ -148,3 +212,24 @@ msgstr "Vorübergehend nicht verfügbar"
 
 msgid "This page cannot be shown right now. Please try again in a little while."
 msgstr "Diese Seite kann gerade nicht angezeigt werden. Versuch es bitte in Kürze noch einmal."
+
+msgid "All dates not in another season"
+msgstr "Alle Tage außerhalb anderer Saisons"
+
+msgid "Stay"
+msgstr "Aufenthalt"
+
+msgid "Per night"
+msgstr "Pro Nacht"
+
+msgid "Package"
+msgstr "Pauschale"
+
+msgid "Nights"
+msgstr "Nächte"
+
+msgid "Total"
+msgstr "Gesamt"
+
+msgid "The final cleaning is charged once per stay, on top of the price of the nights. A stay priced by nights takes the fee of the tier that prices its last night; a package adds its own fee to its total."
+msgstr "Die Endreinigung wird einmal pro Aufenthalt zusätzlich zum Preis der Nächte berechnet. Bei einem Aufenthalt nach Nächten gilt die Gebühr der Staffel, die die letzte Nacht berechnet; eine Pauschale fügt ihre eigene Gebühr zu ihrem Gesamtpreis hinzu."

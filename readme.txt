@@ -31,7 +31,7 @@ Without data they show nothing.
 
 === Your theme ===
 
-To change the markup, copy a template from the plugin's `templates/` folder into `hestahub/` in your (child) theme. The six templates render content only; your theme's header and footer surround them. Their variables are HestaHub's data exactly as received, documented in each template and in the contract. The stylesheet sets no colours: set the `--hestahub-…` custom properties listed in `assets/hestahub.css`, at least the calendar's day states.
+To change the markup, copy a template from the plugin's `templates/` folder into `hestahub/` in your (child) theme. The six templates render content only; your theme's header and footer surround them. Their variables are HestaHub's data exactly as received, documented in each template and in the contract. Helper functions such as `hestahub_amount()`, `hestahub_cleaning_fee()` and `hestahub_tier_label()` format amounts, fees and labels without computing a price; they are documented in the plugin's `src/functions.php`. The stylesheet sets no colours: set the `--hestahub-…` custom properties listed in `assets/hestahub.css`, at least the calendar's day states.
 
 == External services ==
 
