@@ -58,6 +58,7 @@ final class RendererTest extends WP_UnitTestCase {
 	public function test_a_listing_gets_the_wire_objects_as_received_and_nothing_else() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 
+		$this->expectOutputString( 'parent:apartment-listing.php' );
 		hestahub_render( 'apartment-listing' );
 
 		$this->assertSame( array( 'apartments' => $this->data( 'apartments' ) ), $GLOBALS['hestahub_test_vars'] );
@@ -66,6 +67,7 @@ final class RendererTest extends WP_UnitTestCase {
 	public function test_a_single_gets_its_wire_object_as_received_and_nothing_else() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 
+		$this->expectOutputString( 'child:apartment.php' );
 		hestahub_render( 'apartment', array( 'slug' => 'hoettur' ) );
 
 		$this->assertSame( array( 'apartment' => $this->data( 'apartments' )[0] ), $GLOBALS['hestahub_test_vars'] );
@@ -74,6 +76,7 @@ final class RendererTest extends WP_UnitTestCase {
 	public function test_the_rate_table_gets_the_apartment() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 
+		$this->expectOutputString( 'parent:rate-table.php' );
 		hestahub_render( 'rate-table', array( 'slug' => 'hoettur' ) );
 
 		$this->assertSame( array( 'apartment' => $this->data( 'apartments' )[0] ), $GLOBALS['hestahub_test_vars'] );
@@ -83,6 +86,7 @@ final class RendererTest extends WP_UnitTestCase {
 		$this->respond( 200, $this->example( 'availability' ) );
 		$data = $this->data( 'availability' );
 
+		$this->expectOutputString( 'parent:calendar.php' );
 		hestahub_render( 'calendar', array( 'slug' => 'hoettur' ) );
 
 		$this->assertSame(
@@ -109,6 +113,7 @@ final class RendererTest extends WP_UnitTestCase {
 			)
 		);
 
+		$this->expectOutputString( 'child:apartment.php' );
 		hestahub_render( 'apartment', array( 'slug' => 'hoettur' ) );
 
 		$this->assertSame( array( 'x' => 1 ), $GLOBALS['hestahub_test_vars']['apartment']['neu'] );
@@ -183,6 +188,7 @@ final class RendererTest extends WP_UnitTestCase {
 	public function test_rendering_enqueues_the_stylesheet() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 
+		$this->expectOutputString( 'parent:apartment-listing.php' );
 		hestahub_render( 'apartment-listing' );
 
 		$this->assertTrue( wp_style_is( 'hestahub', 'enqueued' ) );
