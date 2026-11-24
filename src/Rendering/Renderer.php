@@ -174,10 +174,11 @@ final class Renderer implements Feature {
 
 	/**
 	 * The envelope of the data the innermost template being rendered reads:
-	 * its currency and whether its amounts include VAT. Nulls outside a
-	 * render, or for data that carries no money.
+	 * its currency, whether its amounts include VAT, and when it was
+	 * fetched. Nulls outside a render, or for data that carries no money.
 	 *
-	 * @return array currency (string|null), prices_include_tax (bool|null).
+	 * @return array currency (string|null), prices_include_tax (bool|null),
+	 *               fetched_at (int|null: when the copy was fetched, fresh or stale).
 	 */
 	public function envelope(): array {
 		$endpoint = end( $this->rendering );
@@ -185,6 +186,7 @@ final class Renderer implements Feature {
 		return array(
 			'currency'           => $result ? $result->currency() : null,
 			'prices_include_tax' => $result ? $result->prices_include_tax() : null,
+			'fetched_at'         => $result ? $result->fetched_at() : null,
 		);
 	}
 
