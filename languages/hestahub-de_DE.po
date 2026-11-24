@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:47+0100\n"
+"POT-Creation-Date: 2026-11-24 13:53+0100\n"
 "PO-Revision-Date: 2026-11-23 00:00+0000\n"
 "Last-Translator: Blackbuck Software\n"
 "Language-Team: German\n"
@@ -144,11 +144,28 @@ msgstr "Ferienwohnungen"
 msgid "HestaHub has not answered successfully since %s. The site shows the last copy it holds for as long as it may, then a placeholder."
 msgstr "HestaHub antwortet seit %s nicht erfolgreich. Die Website zeigt die letzte gespeicherte Kopie, solange sie darf, danach einen Platzhalter."
 
+msgid "Nothing to do here: the plugin keeps retrying. If it goes on, contact HestaHub."
+msgstr "Hier ist nichts zu tun: Das Plugin versucht es weiter. Hält es an, wende dich an HestaHub."
+
+#. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
+#, php-format
+msgid "Whoever administers %s can fix this, not the webmaster."
+msgstr "Beheben kann das, wer %s verwaltet, nicht der Webmaster."
+
+msgid "Update the HestaHub plugin."
+msgstr "Aktualisiere das HestaHub-Plugin."
+
 msgid "HestaHub does not accept the API key."
 msgstr "HestaHub akzeptiert den API-Schlüssel nicht."
 
+msgid "You can fix this: check the API key under Settings → HestaHub, or replace it."
+msgstr "Das kannst du beheben: Prüfe den API-Schlüssel unter Einstellungen → HestaHub oder ersetze ihn."
+
 msgid "The API key has been revoked in HestaHub."
 msgstr "Der API-Schlüssel wurde in HestaHub widerrufen."
+
+msgid "You can fix this: create a new API key in HestaHub and enter it under Settings → HestaHub."
+msgstr "Das kannst du beheben: Erstelle in HestaHub einen neuen API-Schlüssel und trage ihn unter Einstellungen → HestaHub ein."
 
 #. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
 #, php-format
@@ -170,23 +187,6 @@ msgstr "HestaHub hat die API-Version eingestellt, die dieses Plugin nutzt."
 #, php-format
 msgid "HestaHub answered with HTTP status %1$d, code %2$s: %3$s"
 msgstr "HestaHub hat mit HTTP-Status %1$d geantwortet, Code %2$s: %3$s"
-
-msgid "Nothing to do here: the plugin keeps retrying. If it goes on, contact HestaHub."
-msgstr "Hier ist nichts zu tun: Das Plugin versucht es weiter. Hält es an, wende dich an HestaHub."
-
-msgid "You can fix this: check the API key under Settings → HestaHub, or replace it."
-msgstr "Das kannst du beheben: Prüfe den API-Schlüssel unter Einstellungen → HestaHub oder ersetze ihn."
-
-msgid "You can fix this: create a new API key in HestaHub and enter it under Settings → HestaHub."
-msgstr "Das kannst du beheben: Erstelle in HestaHub einen neuen API-Schlüssel und trage ihn unter Einstellungen → HestaHub ein."
-
-#. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
-#, php-format
-msgid "Whoever administers %s can fix this, not the webmaster."
-msgstr "Beheben kann das, wer %s verwaltet, nicht der Webmaster."
-
-msgid "Update the HestaHub plugin."
-msgstr "Aktualisiere das HestaHub-Plugin."
 
 msgid "Check the connection under Settings → HestaHub."
 msgstr "Prüfe die Verbindung unter Einstellungen → HestaHub."

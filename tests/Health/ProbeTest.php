@@ -47,7 +47,7 @@ final class ProbeTest extends WP_UnitTestCase {
 	public function test_a_request_with_the_token_answers_the_real_503_with_its_marker() {
 		$this->fake_hestahub();
 		$this->respond( 200, $this->example( 'apartments' ) ); // Data is there: the probe forces the 503 anyway.
-		set_transient( Probe::TOKEN, 'geheim', MINUTE_IN_SECONDS );
+		set_transient( Probe::TRANSIENT, 'geheim', MINUTE_IN_SECONDS );
 		$_GET[ Probe::PARAM ] = 'geheim';
 
 		$this->visit( '/wohnungen/?hestahub_probe=geheim' );
@@ -75,7 +75,7 @@ final class ProbeTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( Probe::OK, ( new Probe() )->run()['result'] );
-		$this->assertFalse( get_transient( Probe::TOKEN ), 'The token is single-use.' );
+		$this->assertFalse( get_transient( Probe::TRANSIENT ), 'The token is single-use.' );
 	}
 
 	public function test_a_503_turned_into_another_status_is_reported_rewritten() {
@@ -153,7 +153,7 @@ final class ProbeTest extends WP_UnitTestCase {
 			'pre_http_request',
 			function ( $preempt, $args, $url ) use ( $answer ) {
 				parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
-				$this->assertSame( get_transient( Probe::TOKEN ), $query['hestahub_probe'] ?? null, 'The token is live while the probe runs.' );
+				$this->assertSame( get_transient( Probe::TRANSIENT ), $query['hestahub_probe'] ?? null, 'The token is live while the probe runs.' );
 				return $answer( $query['hestahub_probe'] ?? '', $url );
 			},
 			10,

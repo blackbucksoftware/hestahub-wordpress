@@ -126,46 +126,64 @@ final class Escalation implements Feature {
 	}
 
 	/**
-	 * Emails the admin about every problem newly due an email. Hooked to
-	 * the hourly WP-Cron event.
+	 * Emails the admin about every problem with a run of failures newly due
+	 * an email. Hooked to the hourly WP-Cron event. A plugin that never
+	 * fetched successfully emails nothing; it only remembers nothing as sent.
 	 */
 	public function escalate(): void {
 		$diagnosis = $this->diagnosis();
 		$problems  = $diagnosis->problems();
 		$emailed   = $this->emailed();
 
-		$current = array();
-		foreach ( $problems as $problem ) {
-			foreach ( $problem['streaks'] as $endpoint => $since ) {
-				$current[ $endpoint . ':' . $since ] = true;
-			}
-		}
-		$emailed = array_intersect_key( $emailed, $current ); // Forget runs that ended.
-
 		$due = array();
-		if ( $diagnosis->ever_fetched() ) {
-			foreach ( $problems as $problem ) {
-				if ( ! $problem['email'] ) {
-					continue;
-				}
-				$new = false;
-				foreach ( $problem['streaks'] as $endpoint => $since ) {
-					$new = $new || ! isset( $emailed[ $endpoint . ':' . $since ] );
-				}
-				if ( $new ) {
-					$due[] = $problem;
-				}
+		$new = array();
+		foreach ( $problems as $problem ) {
+			$runs = array();
+			foreach ( $problem['due'] as $endpoint => $since ) {
+				$runs[] = self::run_key( $endpoint, $since );
+			}
+			$unsent = array_diff( $runs, array_keys( $emailed ) );
+			if ( $unsent ) {
+				$due[] = $problem;
+				$new   = array_merge( $new, $unsent );
 			}
 		}
 
-		if ( $due && $this->send( $due ) ) {
-			foreach ( $due as $problem ) {
-				foreach ( $problem['streaks'] as $endpoint => $since ) {
-					$emailed[ $endpoint . ':' . $since ] = true;
-				}
+		if ( $due && $diagnosis->ever_fetched() && $this->send( $due ) ) {
+			foreach ( $new as $run ) {
+				$emailed[ $run ] = true;
 			}
 		}
-		update_option( self::EMAILED, $emailed, false );
+		update_option( self::EMAILED, $this->still_failing( $emailed ), false );
+	}
+
+	/**
+	 * The emailed runs whose endpoint is still in that run of failures;
+	 * the rest have ended, and a new run is told afresh.
+	 *
+	 * @param array<string, true> $emailed Runs emailed.
+	 * @return array<string, true>
+	 */
+	private function still_failing( array $emailed ): array {
+		$tenant  = $this->credentials->tenant();
+		$current = array();
+		foreach ( $this->endpoints() as $endpoint ) {
+			$since = EndpointState::load( $endpoint, $tenant )->failing_since();
+			if ( null !== $since ) {
+				$current[ self::run_key( $endpoint, $since ) ] = true;
+			}
+		}
+		return array_intersect_key( $emailed, $current );
+	}
+
+	/**
+	 * One run of failures of one endpoint.
+	 *
+	 * @param string $endpoint The endpoint.
+	 * @param int    $since    When the run began.
+	 */
+	private static function run_key( string $endpoint, int $since ): string {
+		return $endpoint . ':' . $since;
 	}
 
 	/**

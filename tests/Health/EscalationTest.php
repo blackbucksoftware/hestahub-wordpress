@@ -110,6 +110,45 @@ final class EscalationTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $this->mails );
 	}
 
+	public function test_a_verdict_after_an_outage_is_a_new_run_and_emailed_at_once() {
+		$this->fetched_once();
+		$this->break_down( 'apartments', 503, '' );
+		$this->now += 4 * DAY_IN_SECONDS;
+		$this->escalate();
+		$this->assertCount( 1, $this->mails, 'The outage, on day 5.' );
+
+		$this->now += HOUR_IN_SECONDS;
+		$this->break_down( 'apartments', 401, 'key_revoked' );
+		$this->escalate();
+
+		$this->assertCount( 2, $this->mails );
+		$this->assertStringContainsString( 'revoked', $this->mails[1]['message'] );
+	}
+
+	public function test_an_outage_after_a_verdict_counts_its_24_hours_from_its_own_start() {
+		$this->fetched_once();
+		$this->break_down( 'apartments', 401, 'unauthorized' );
+		$this->now += 2 * DAY_IN_SECONDS;
+
+		$this->break_down( 'apartments', 503, '' );
+
+		$this->assertStringNotContainsString( 'has not answered successfully', $this->notices() );
+	}
+
+	public function test_an_endpoint_joining_an_outage_keeps_its_own_clock() {
+		$this->fetched_once();
+		$this->break_down( 'clinics', 503, '' );
+		$this->now += 4 * DAY_IN_SECONDS;
+		$this->escalate();
+		$this->assertCount( 1, $this->mails );
+
+		$this->now += HOUR_IN_SECONDS;
+		$this->break_down( 'apartments', 503, '' );
+		$this->escalate();
+
+		$this->assertCount( 1, $this->mails, 'The new run waits for its own fifth day.' );
+	}
+
 	public function test_a_plugin_that_never_fetched_successfully_sends_no_email() {
 		$this->break_down( 'meta', 401, 'unauthorized' );
 

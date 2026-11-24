@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:47+0100\n"
+"POT-Creation-Date: 2026-11-24 13:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -148,10 +148,27 @@ msgstr ""
 msgid "HestaHub has not answered successfully since %s. The site shows the last copy it holds for as long as it may, then a placeholder."
 msgstr ""
 
+msgid "Nothing to do here: the plugin keeps retrying. If it goes on, contact HestaHub."
+msgstr ""
+
+#. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
+#, php-format
+msgid "Whoever administers %s can fix this, not the webmaster."
+msgstr ""
+
+msgid "Update the HestaHub plugin."
+msgstr ""
+
 msgid "HestaHub does not accept the API key."
 msgstr ""
 
+msgid "You can fix this: check the API key under Settings → HestaHub, or replace it."
+msgstr ""
+
 msgid "The API key has been revoked in HestaHub."
+msgstr ""
+
+msgid "You can fix this: create a new API key in HestaHub and enter it under Settings → HestaHub."
 msgstr ""
 
 #. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
@@ -173,23 +190,6 @@ msgstr ""
 #. translators: 1: HTTP status, 2: error code, 3: HestaHub's message.
 #, php-format
 msgid "HestaHub answered with HTTP status %1$d, code %2$s: %3$s"
-msgstr ""
-
-msgid "Nothing to do here: the plugin keeps retrying. If it goes on, contact HestaHub."
-msgstr ""
-
-msgid "You can fix this: check the API key under Settings → HestaHub, or replace it."
-msgstr ""
-
-msgid "You can fix this: create a new API key in HestaHub and enter it under Settings → HestaHub."
-msgstr ""
-
-#. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
-#, php-format
-msgid "Whoever administers %s can fix this, not the webmaster."
-msgstr ""
-
-msgid "Update the HestaHub plugin."
 msgstr ""
 
 msgid "Check the connection under Settings → HestaHub."

@@ -99,7 +99,10 @@ final class EndpointState {
 			++$this->outages;
 			$wait = (int) min( self::FIRST_RETRY * pow( 2, min( $this->outages - 1, 16 ) ), self::MAX_RETRY );
 		}
-		if ( null === $this->failing_since ) {
+		// A run of failures is one diagnosis: a change of kind or code (an
+		// outage turning into a verdict, one verdict into another) starts a
+		// new run, which escalation counts and tells afresh.
+		if ( null === $this->failing_since || ! $this->failure || ! $this->failure->same_diagnosis( $failure ) ) {
 			$this->failing_since = $now;
 		}
 		$this->failure  = $failure;

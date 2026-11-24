@@ -430,10 +430,16 @@ final class ClientTest extends WP_UnitTestCase {
 		$this->respond( 500 );
 		$this->client()->get( 'apartments' );
 		$this->now += MINUTE_IN_SECONDS;
+		$this->respond( 503 );
+		$result = $this->client()->get( 'apartments' );
+
+		$this->assertSame( $began, $result->failing_since(), 'Outages continue one run.' );
+
+		$this->now += 2 * MINUTE_IN_SECONDS;
 		$this->respond( 401 );
 		$result = $this->client()->get( 'apartments' );
 
-		$this->assertSame( $began, $result->failing_since() );
+		$this->assertSame( $this->now, $result->failing_since(), 'Another diagnosis starts a new run.' );
 
 		$this->now += HOUR_IN_SECONDS;
 		$this->respond( 200, $this->example( 'apartments' ) );

@@ -20,7 +20,7 @@ use HestaHub\Routing\Routes;
 final class Probe {
 
 	const PARAM = 'hestahub_probe';
-	const TOKEN = 'hestahub_probe';
+	const TRANSIENT = 'hestahub_probe_token';
 
 	const OK          = 'ok';
 	const REWRITTEN   = 'rewritten';
@@ -46,7 +46,7 @@ final class Probe {
 		}
 
 		$token = wp_generate_password( 32, false );
-		set_transient( self::TOKEN, $token, MINUTE_IN_SECONDS );
+		set_transient( self::TRANSIENT, $token, MINUTE_IN_SECONDS );
 		$response = wp_remote_get(
 			add_query_arg( self::PARAM, $token, $url ),
 			array(
@@ -55,7 +55,7 @@ final class Probe {
 				'sslverify'   => apply_filters( 'https_local_ssl_verify', false ), // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core's hook, as for loopback requests.
 			)
 		);
-		delete_transient( self::TOKEN );
+		delete_transient( self::TRANSIENT );
 
 		if ( is_wp_error( $response ) ) {
 			return self::outcome( self::UNREACHABLE, 0, $response->get_error_message() );
@@ -71,8 +71,11 @@ final class Probe {
 	public static function requested(): ?string {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- the token is the check.
 		$given = isset( $_GET[ self::PARAM ] ) ? sanitize_text_field( wp_unslash( $_GET[ self::PARAM ] ) ) : '';
-		$token = get_transient( self::TOKEN );
-		return '' !== $given && is_string( $token ) && '' !== $token && hash_equals( $token, $given ) ? $token : null;
+		if ( '' === $given ) {
+			return null; // Every ordinary request: no lookup.
+		}
+		$token = get_transient( self::TRANSIENT );
+		return is_string( $token ) && '' !== $token && hash_equals( $token, $given ) ? $token : null;
 	}
 
 	/**

@@ -57,13 +57,14 @@ final class Diagnosis {
 	}
 
 	/**
-	 * The current problems, one per diagnosis.
+	 * The current problems, one per diagnosis. Each endpoint keeps its own
+	 * clock: a problem's notice is due once any of its endpoints has failed
+	 * long enough, and its email names the runs of failures now due one.
 	 *
-	 * @return array[] kind (verdict, outage), code, message, status, since,
-	 *                 diagnosis, remedy (who can fix it, and how), notice
-	 *                 and email (whether each is due), streaks (endpoint =>
-	 *                 failing_since, which tells one run of failures from
-	 *                 the next).
+	 * @return array[] kind (verdict, outage), code, message, status, since
+	 *                 (the oldest run), diagnosis, remedy (who can fix it,
+	 *                 and how), notice (whether due), due (the runs due an
+	 *                 email, as endpoint => failing_since).
 	 */
 	public function problems(): array {
 		$problems = array();
@@ -73,96 +74,90 @@ final class Diagnosis {
 			if ( null === $failure || null === $since ) {
 				continue;
 			}
-			$verdict = Failure::VERDICT === $failure->kind();
-			$key     = $verdict ? $failure->code() . '|' . $failure->status() . '|' . ( 'module_disabled' === $failure->code() ? $this->module( $endpoint ) : '' ) : 'outage';
+			$key = $this->problem_key( $failure, $endpoint );
 			if ( ! isset( $problems[ $key ] ) ) {
+				$words            = $this->words( $failure, $endpoint, $since );
 				$problems[ $key ] = array(
-					'kind'    => $failure->kind(),
-					'code'    => $failure->code(),
-					'message' => $failure->message(),
-					'status'  => $failure->status(),
-					'since'   => $since,
-					'module'  => $this->module( $endpoint ),
-					'streaks' => array(),
+					'kind'      => $failure->kind(),
+					'code'      => $failure->code(),
+					'message'   => $failure->message(),
+					'status'    => $failure->status(),
+					'since'     => $since,
+					'diagnosis' => $words[0],
+					'remedy'    => $words[1],
+					'notice'    => false,
+					'due'       => array(),
 				);
 			}
-			$problems[ $key ]['since']                 = min( $problems[ $key ]['since'], $since );
-			$problems[ $key ]['streaks'][ $endpoint ] = $since;
+			$verdict = Failure::VERDICT === $failure->kind();
+			$age     = $this->now - $since;
+			if ( $since < $problems[ $key ]['since'] ) {
+				$problems[ $key ]['since']     = $since;
+				$problems[ $key ]['diagnosis'] = $this->words( $failure, $endpoint, $since )[0];
+			}
+			$problems[ $key ]['notice'] = $problems[ $key ]['notice'] || $verdict || $age >= self::NOTICE_AFTER;
+			if ( $verdict || $age >= self::EMAIL_AFTER ) {
+				$problems[ $key ]['due'][ $endpoint ] = $since;
+			}
 		}
+		return array_values( $problems );
+	}
 
-		$told = array();
-		foreach ( $problems as $problem ) {
-			$verdict = Failure::VERDICT === $problem['kind'];
-			$age     = $this->now - $problem['since'];
-			$told[]  = array(
-				'kind'      => $problem['kind'],
-				'code'      => $problem['code'],
-				'message'   => $problem['message'],
-				'status'    => $problem['status'],
-				'since'     => $problem['since'],
-				'diagnosis' => $this->diagnosis( $problem ),
-				'remedy'    => $this->remedy( $problem ),
-				'notice'    => $verdict || $age >= self::NOTICE_AFTER,
-				'email'     => $verdict || $age >= self::EMAIL_AFTER,
-				'streaks'   => $problem['streaks'],
+	/**
+	 * Which problem a failure belongs to: all outages are one; a verdict is
+	 * its status and code, and for module_disabled also its Module.
+	 *
+	 * @param Failure $failure  The failure.
+	 * @param string  $endpoint Its endpoint.
+	 */
+	private function problem_key( Failure $failure, string $endpoint ): string {
+		if ( Failure::VERDICT !== $failure->kind() ) {
+			return 'outage';
+		}
+		$module = 'module_disabled' === $failure->code() ? $this->module( $endpoint ) : '';
+		return implode( '|', array( $failure->code(), $failure->status(), $module ) );
+	}
+
+	/**
+	 * What is wrong and who can fix it, in the webmaster's words.
+	 *
+	 * @param Failure $failure  The failure.
+	 * @param string  $endpoint Its endpoint.
+	 * @param int     $since    When its run of failures began.
+	 * @return string[] diagnosis, remedy.
+	 */
+	private function words( Failure $failure, string $endpoint, int $since ): array {
+		if ( Failure::VERDICT !== $failure->kind() ) {
+			return array(
+				/* translators: %s: date and time of the first failure. */
+				sprintf( __( 'HestaHub has not answered successfully since %s. The site shows the last copy it holds for as long as it may, then a placeholder.', 'hestahub' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $since ) ),
+				__( 'Nothing to do here: the plugin keeps retrying. If it goes on, contact HestaHub.', 'hestahub' ),
 			);
 		}
-		return $told;
-	}
-
-	/**
-	 * What is wrong, in the webmaster's words.
-	 *
-	 * @param array $problem A problem.
-	 */
-	private function diagnosis( array $problem ): string {
-		if ( Failure::VERDICT !== $problem['kind'] ) {
-			/* translators: %s: date and time of the first failure. */
-			return sprintf( __( 'HestaHub has not answered successfully since %s. The site shows the last copy it holds for as long as it may, then a placeholder.', 'hestahub' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $problem['since'] ) );
-		}
-		switch ( $problem['code'] ) {
+		/* translators: %s: the HestaHub address, e.g. kronshof.hestahub.com. */
+		$tenants = sprintf( __( 'Whoever administers %s can fix this, not the webmaster.', 'hestahub' ), $this->host() );
+		$update  = __( 'Update the HestaHub plugin.', 'hestahub' );
+		switch ( $failure->code() ) {
 			case 'unauthorized':
-				return __( 'HestaHub does not accept the API key.', 'hestahub' );
+				return array( __( 'HestaHub does not accept the API key.', 'hestahub' ), __( 'You can fix this: check the API key under Settings → HestaHub, or replace it.', 'hestahub' ) );
 			case 'key_revoked':
-				return __( 'The API key has been revoked in HestaHub.', 'hestahub' );
+				return array( __( 'The API key has been revoked in HestaHub.', 'hestahub' ), __( 'You can fix this: create a new API key in HestaHub and enter it under Settings → HestaHub.', 'hestahub' ) );
 			case 'tenant_inactive':
 				/* translators: %s: the HestaHub address, e.g. kronshof.hestahub.com. */
-				return sprintf( __( 'HestaHub knows no active Tenant at %s.', 'hestahub' ), $this->host() );
+				return array( sprintf( __( 'HestaHub knows no active Tenant at %s.', 'hestahub' ), $this->host() ), $tenants );
 			case 'module_disabled':
 				/* translators: 1: the HestaHub address, 2: Apartments or Clinics. */
-				return sprintf( __( '%1$s does not have the %2$s module.', 'hestahub' ), $this->host(), $problem['module'] );
+				return array( sprintf( __( '%1$s does not have the %2$s module.', 'hestahub' ), $this->host(), $this->module( $endpoint ) ), $tenants );
 			case 'not_found':
-				return __( 'HestaHub does not know an endpoint this plugin asked for.', 'hestahub' );
+				return array( __( 'HestaHub does not know an endpoint this plugin asked for.', 'hestahub' ), $update );
 			case 'version_gone':
-				return __( 'HestaHub has retired the API version this plugin uses.', 'hestahub' );
+				return array( __( 'HestaHub has retired the API version this plugin uses.', 'hestahub' ), $update );
 		}
-		/* translators: 1: HTTP status, 2: error code, 3: HestaHub's message. */
-		return trim( sprintf( __( 'HestaHub answered with HTTP status %1$d, code %2$s: %3$s', 'hestahub' ), $problem['status'], '' === $problem['code'] ? '—' : $problem['code'], $problem['message'] ), " \t\n\r\0\x0B:" );
-	}
-
-	/**
-	 * Who can fix a problem, and how.
-	 *
-	 * @param array $problem A problem.
-	 */
-	private function remedy( array $problem ): string {
-		if ( Failure::VERDICT !== $problem['kind'] ) {
-			return __( 'Nothing to do here: the plugin keeps retrying. If it goes on, contact HestaHub.', 'hestahub' );
-		}
-		switch ( $problem['code'] ) {
-			case 'unauthorized':
-				return __( 'You can fix this: check the API key under Settings → HestaHub, or replace it.', 'hestahub' );
-			case 'key_revoked':
-				return __( 'You can fix this: create a new API key in HestaHub and enter it under Settings → HestaHub.', 'hestahub' );
-			case 'tenant_inactive':
-			case 'module_disabled':
-				/* translators: %s: the HestaHub address, e.g. kronshof.hestahub.com. */
-				return sprintf( __( 'Whoever administers %s can fix this, not the webmaster.', 'hestahub' ), $this->host() );
-			case 'not_found':
-			case 'version_gone':
-				return __( 'Update the HestaHub plugin.', 'hestahub' );
-		}
-		return __( 'Check the connection under Settings → HestaHub.', 'hestahub' );
+		return array(
+			/* translators: 1: HTTP status, 2: error code, 3: HestaHub's message. */
+			trim( sprintf( __( 'HestaHub answered with HTTP status %1$d, code %2$s: %3$s', 'hestahub' ), $failure->status(), '' === $failure->code() ? '—' : $failure->code(), $failure->message() ), " \t\n\r\0\x0B:" ),
+			__( 'Check the connection under Settings → HestaHub.', 'hestahub' ),
+		);
 	}
 
 	/**

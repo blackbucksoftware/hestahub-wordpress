@@ -240,15 +240,14 @@ final class Routes implements Feature {
 			return;
 		}
 		$probe  = $this->resolve( $wp_query )['probe'];
+		$marker = null === $probe ? '' : "\n" . Probe::marker( $probe );
 		$length = 0;
 		ob_start(
-			function ( $buffer, $phase ) use ( &$length, $probe ) {
+			function ( $buffer, $phase ) use ( &$length, $marker ) {
 				$length += strlen( $buffer );
 				if ( $phase & PHP_OUTPUT_HANDLER_FINAL ) {
-					if ( null !== $probe ) {
-						$buffer .= "\n" . Probe::marker( $probe );
-						$length += strlen( Probe::marker( $probe ) ) + 1;
-					}
+					$buffer .= $marker;
+					$length += strlen( $marker );
 					if ( $length <= self::MIN_503_BODY ) {
 						$buffer .= "\n<!-- " . str_repeat( '-', self::MIN_503_BODY - $length ) . ' -->';
 					}
