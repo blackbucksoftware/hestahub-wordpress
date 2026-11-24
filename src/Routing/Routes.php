@@ -9,6 +9,7 @@ use HestaHub\Admin\Settings;
 use HestaHub\Api\Client;
 use HestaHub\Feature;
 use HestaHub\Plugin;
+use HestaHub\Rendering\Renderer;
 
 /**
  * Owns <base> and <base>/<slug> for Apartments and for Clinics.
@@ -59,6 +60,9 @@ final class Routes implements Feature {
 	/** @var Client */
 	private $client;
 
+	/** @var Renderer */
+	private $renderer;
+
 	/** @var string The plugin's folder. */
 	private $dir;
 
@@ -73,14 +77,16 @@ final class Routes implements Feature {
 	private $resolved = null;
 
 	/**
-	 * @param Client        $client The API client.
-	 * @param string        $dir    The plugin's folder, holding templates/.
-	 * @param callable|null $header Sends a raw header. Defaults to header(),
-	 *                              unless headers are already sent.
+	 * @param Client        $client   The API client.
+	 * @param Renderer      $renderer Renders the plugin's templates.
+	 * @param string        $dir      The plugin's folder, holding templates/.
+	 * @param callable|null $header   Sends a raw header. Defaults to header(),
+	 *                                unless headers are already sent.
 	 */
-	public function __construct( Client $client, string $dir, $header = null ) {
-		$this->client = $client;
-		$this->dir    = $dir;
+	public function __construct( Client $client, Renderer $renderer, string $dir, $header = null ) {
+		$this->client   = $client;
+		$this->renderer = $renderer;
+		$this->dir      = $dir;
 		$this->header = $header ? $header : static function ( string $line ): void {
 			if ( ! headers_sent() ) {
 				header( $line );
@@ -98,6 +104,7 @@ final class Routes implements Feature {
 		add_filter( 'pre_handle_404', array( $this, 'pre_handle_404' ), 10, 2 );
 		add_action( 'template_redirect', array( $this, 'template_redirect' ), PHP_INT_MAX );
 		add_filter( 'template_include', array( $this, 'template_include' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'wp_head', array( $this, 'canonical' ) );
 		add_filter( 'document_title_parts', array( $this, 'document_title_parts' ) );
 		// Yoast SEO takes an owned route for the home page: its canonical and
@@ -244,23 +251,45 @@ final class Routes implements Feature {
 	}
 
 	/**
-	 * The theme's copy of the route's template, else the plugin's. The
-	 * no-data pages are the plugin's own: the contract names the templates
-	 * a theme may override, and they are not among them.
+	 * The plugin's page shell, which prints the theme's header and footer
+	 * around render_content().
 	 *
 	 * @param string $template The template WordPress chose.
 	 */
 	public function template_include( $template ) {
+		return null === $this->current() ? $template : $this->dir . '/templates/shell.php';
+	}
+
+	/**
+	 * Prints the route's content: its template, found in the theme or the
+	 * plugin and given the wire objects; or, without data, the plugin's own
+	 * no-data page. The contract names the templates a theme may override,
+	 * and the no-data pages are not among them.
+	 */
+	public function render_content(): void {
 		$resolved = $this->current();
 		if ( null === $resolved ) {
-			return $template;
+			return;
 		}
 		if ( self::FOUND !== $resolved['answer'] ) {
-			return $this->dir . '/templates/no-data/' . $resolved['answer'] . '.php';
+			include $this->dir . '/templates/no-data/' . $resolved['answer'] . '.php';
+			return;
 		}
-		$name  = self::TEMPLATES[ $resolved['resource'] ][ null === $resolved['slug'] ? 0 : 1 ];
-		$theme = locate_template( 'hestahub/' . $name . '.php' );
-		return $theme ? $theme : $this->dir . '/templates/' . $name . '.php';
+		$name      = self::TEMPLATES[ $resolved['resource'] ][ null === $resolved['slug'] ? 0 : 1 ];
+		$variables = $this->renderer->variables( $name, null === $resolved['slug'] ? array() : array( $resolved['slug'] ) );
+		if ( null !== $variables ) {
+			echo $this->renderer->render( $name, $variables ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- templates escape.
+		}
+	}
+
+	/**
+	 * Enqueues the stylesheet in the head of an owned route. Hooked to
+	 * wp_enqueue_scripts.
+	 */
+	public function enqueue(): void {
+		if ( null !== $this->current() ) {
+			$this->renderer->enqueue();
+		}
 	}
 
 	/**

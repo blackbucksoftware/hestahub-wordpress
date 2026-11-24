@@ -57,7 +57,7 @@ DIR="$OUT/hestahub"
 rm -rf "$OUT"
 mkdir -p "$DIR"
 
-cp -R hestahub.php uninstall.php readme.txt LICENSE src templates languages composer.json composer.lock "$DIR/"
+cp -R hestahub.php uninstall.php readme.txt LICENSE src templates assets languages composer.json composer.lock "$DIR/"
 for po in "$DIR"/languages/*.po; do
 	msgfmt --check -o "${po%.po}.mo" "$po"
 done

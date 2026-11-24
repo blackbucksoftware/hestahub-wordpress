@@ -7,6 +7,7 @@ namespace HestaHub\Tests\Support;
 
 use HestaHub\Api\Client;
 use HestaHub\Api\Credentials;
+use HestaHub\Rendering\Renderer;
 use HestaHub\Routing\Routes;
 
 /**
@@ -21,6 +22,9 @@ trait VisitsRoutes {
 	/** @var string[] Headers sent besides the status. */
 	private $headers = array();
 
+	/** @var Routes|null The last request's Routes. */
+	private $routes;
+
 	/**
 	 * @param string $path The path.
 	 */
@@ -29,11 +33,13 @@ trait VisitsRoutes {
 		$wp_rewrite->extra_rules_top = array();
 		$this->headers               = array();
 		// A fresh request: no earlier request's Routes still hooked.
-		foreach ( array( 'parse_query', 'posts_pre_query', 'pre_handle_404', 'template_redirect', 'template_include', 'wp_head', 'document_title_parts', 'wpseo_canonical', 'wpseo_title' ) as $hook ) {
+		foreach ( array( 'parse_query', 'posts_pre_query', 'pre_handle_404', 'template_redirect', 'template_include', 'wp_enqueue_scripts', 'wp_head', 'document_title_parts', 'wpseo_canonical', 'wpseo_title' ) as $hook ) {
 			remove_all_filters( $hook );
 		}
+		$client = $this->client();
 		$routes = new Routes(
-			$this->client(),
+			$client,
+			new Renderer( $client, dirname( __DIR__, 2 ) ),
 			dirname( __DIR__, 2 ),
 			function ( $header ) {
 				$this->headers[] = $header;
@@ -42,7 +48,17 @@ trait VisitsRoutes {
 		$routes->register( hestahub() );
 		$routes->add_rules();
 		$routes->flush_if_changed();
+		$this->routes = $routes;
 		$this->go_to( home_url( $path ) );
+	}
+
+	/**
+	 * What the page shell prints between the theme's header and footer.
+	 */
+	private function content(): string {
+		ob_start();
+		$this->routes->render_content();
+		return (string) ob_get_clean();
 	}
 
 	private function client(): Client {

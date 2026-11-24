@@ -39,6 +39,7 @@ Needs PHP, Composer, gettext and a MySQL or MariaDB server.
 - Features implement `HestaHub\Feature`, are added in `hestahub.php`, and hook into WordPress in `register()`, which runs once on `plugins_loaded`.
 - The update channel lives in `updates.php` and nowhere else. Outside it, only two things may refer to updates: the `file_exists()` require in `hestahub.php` (the one switch) and the `Update URI` header, which can't live anywhere else and which the `--wporg` build strips. Nothing may refer to `lib/plugin-update-checker/` except `updates.php`.
 - Only `HestaHub\Api\Client` talks to HestaHub. Everything else reads through `Client::get()`, which serves the cached copy, refetches past `ttl`, serves stale on any failure until `stale_ttl`, and backs off. TTLs come only from the body: never add a number of your own or a setting for one.
+- Data reaches a page only through `HestaHub\Rendering\Renderer`: it finds a template (child theme, parent theme, plugin) and passes the wire objects as received. The six templates in `templates/` are the ones a theme overrides, render content only, and their variables are contract. `templates/shell.php` and `templates/no-data/` are the plugin's own.
 - Every option, transient and site transient the plugin stores is named `hestahub_…`. `uninstall.php` deletes by that prefix.
 
 ## Public repository
