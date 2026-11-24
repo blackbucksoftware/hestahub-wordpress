@@ -182,7 +182,7 @@ final class ClientTest extends WP_UnitTestCase {
 			$this->now += 6 * HOUR_IN_SECONDS;
 			$result = $this->client()->get( 'apartments' );
 		} finally {
-			wp_using_ext_object_cache( $was_external );
+			wp_using_ext_object_cache( (bool) $was_external ); // It may start as null, which would change nothing.
 		}
 
 		$this->assertTrue( $result->is_ok(), 'The contract: keep a body until stale_ttl.' );
@@ -430,10 +430,16 @@ final class ClientTest extends WP_UnitTestCase {
 		$this->respond( 500 );
 		$this->client()->get( 'apartments' );
 		$this->now += MINUTE_IN_SECONDS;
+		$this->respond( 503 );
+		$result = $this->client()->get( 'apartments' );
+
+		$this->assertSame( $began, $result->failing_since(), 'Outages continue one run.' );
+
+		$this->now += 2 * MINUTE_IN_SECONDS;
 		$this->respond( 401 );
 		$result = $this->client()->get( 'apartments' );
 
-		$this->assertSame( $began, $result->failing_since() );
+		$this->assertSame( $this->now, $result->failing_since(), 'Another diagnosis starts a new run.' );
 
 		$this->now += HOUR_IN_SECONDS;
 		$this->respond( 200, $this->example( 'apartments' ) );

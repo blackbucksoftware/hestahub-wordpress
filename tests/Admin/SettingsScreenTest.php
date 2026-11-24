@@ -166,6 +166,21 @@ final class SettingsScreenTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<code>key_revoked</code> The API key was revoked.', $page );
 	}
 
+	public function test_test_connection_also_reports_the_outage_check() {
+		$this->respond( 200, $this->example( 'meta' ) ); // The live call; no base path, so no probe request.
+		$this->post( 'test' );
+		$this->respond( 200, $this->example( 'meta' ) ); // meta, for the screen.
+
+		$this->assertStringContainsString( 'Outage check: set a base path first.', $this->render() );
+	}
+
+	public function test_refresh_now_runs_no_outage_check() {
+		$this->post( 'refresh' );
+		$this->respond( 200, $this->example( 'meta' ) ); // meta, for the screen.
+
+		$this->assertStringNotContainsString( 'Outage check', $this->render() );
+	}
+
 	public function test_test_connection_bypasses_and_keeps_the_cache() {
 		$client = $this->client();
 		$this->respond( 200, $this->example( 'meta' ) );

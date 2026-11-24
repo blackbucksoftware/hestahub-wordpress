@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:30+0100\n"
+"POT-Creation-Date: 2026-11-24 13:53+0100\n"
 "PO-Revision-Date: 2026-11-23 00:00+0000\n"
 "Last-Translator: Blackbuck Software\n"
 "Language-Team: German\n"
@@ -114,6 +114,22 @@ msgstr "Mindestversion des Plugins"
 msgid "The connection works."
 msgstr "Die Verbindung funktioniert."
 
+msgid "Outage check: the host passes the plugin’s 503 through unchanged, so page caches will not store an outage."
+msgstr "Ausfallprüfung: Der Host gibt die 503-Antwort des Plugins unverändert weiter, Seiten-Caches speichern also keinen Ausfall."
+
+#. translators: %d: the HTTP status that came back.
+#, php-format
+msgid "Outage check: the host or a cache changed the plugin’s 503 (it came back with HTTP status %d, or without the plugin’s page). During an outage visitors may see a cached or error page instead. Ask your host to pass 503 responses through."
+msgstr "Ausfallprüfung: Der Host oder ein Cache hat die 503-Antwort des Plugins verändert (sie kam mit HTTP-Status %d oder ohne die Seite des Plugins zurück). Bei einem Ausfall sehen Besucher dann womöglich eine zwischengespeicherte oder eine Fehlerseite. Bitte deinen Host, 503-Antworten unverändert durchzulassen."
+
+#. translators: %s: why the request failed.
+#, php-format
+msgid "Outage check: this site could not request its own page: %s"
+msgstr "Ausfallprüfung: Diese Website konnte ihre eigene Seite nicht abrufen: %s"
+
+msgid "Outage check: set a base path first. The check needs one of the plugin’s pages."
+msgstr "Ausfallprüfung: Lege zuerst einen Basispfad fest. Die Prüfung braucht eine Seite des Plugins."
+
 msgid "None"
 msgstr "Keine"
 
@@ -122,6 +138,94 @@ msgstr "Kurse"
 
 msgid "Apartments"
 msgstr "Ferienwohnungen"
+
+#. translators: %s: date and time of the first failure.
+#, php-format
+msgid "HestaHub has not answered successfully since %s. The site shows the last copy it holds for as long as it may, then a placeholder."
+msgstr "HestaHub antwortet seit %s nicht erfolgreich. Die Website zeigt die letzte gespeicherte Kopie, solange sie darf, danach einen Platzhalter."
+
+msgid "Nothing to do here: the plugin keeps retrying. If it goes on, contact HestaHub."
+msgstr "Hier ist nichts zu tun: Das Plugin versucht es weiter. Hält es an, wende dich an HestaHub."
+
+#. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
+#, php-format
+msgid "Whoever administers %s can fix this, not the webmaster."
+msgstr "Beheben kann das, wer %s verwaltet, nicht der Webmaster."
+
+msgid "Update the HestaHub plugin."
+msgstr "Aktualisiere das HestaHub-Plugin."
+
+msgid "HestaHub does not accept the API key."
+msgstr "HestaHub akzeptiert den API-Schlüssel nicht."
+
+msgid "You can fix this: check the API key under Settings → HestaHub, or replace it."
+msgstr "Das kannst du beheben: Prüfe den API-Schlüssel unter Einstellungen → HestaHub oder ersetze ihn."
+
+msgid "The API key has been revoked in HestaHub."
+msgstr "Der API-Schlüssel wurde in HestaHub widerrufen."
+
+msgid "You can fix this: create a new API key in HestaHub and enter it under Settings → HestaHub."
+msgstr "Das kannst du beheben: Erstelle in HestaHub einen neuen API-Schlüssel und trage ihn unter Einstellungen → HestaHub ein."
+
+#. translators: %s: the HestaHub address, e.g. kronshof.hestahub.com.
+#, php-format
+msgid "HestaHub knows no active Tenant at %s."
+msgstr "HestaHub kennt unter %s keinen aktiven Mandanten."
+
+#. translators: 1: the HestaHub address, 2: Apartments or Clinics.
+#, php-format
+msgid "%1$s does not have the %2$s module."
+msgstr "%1$s hat das Modul %2$s nicht."
+
+msgid "HestaHub does not know an endpoint this plugin asked for."
+msgstr "HestaHub kennt einen Endpunkt nicht, den dieses Plugin abgefragt hat."
+
+msgid "HestaHub has retired the API version this plugin uses."
+msgstr "HestaHub hat die API-Version eingestellt, die dieses Plugin nutzt."
+
+#. translators: 1: HTTP status, 2: error code, 3: HestaHub's message.
+#, php-format
+msgid "HestaHub answered with HTTP status %1$d, code %2$s: %3$s"
+msgstr "HestaHub hat mit HTTP-Status %1$d geantwortet, Code %2$s: %3$s"
+
+msgid "Check the connection under Settings → HestaHub."
+msgstr "Prüfe die Verbindung unter Einstellungen → HestaHub."
+
+msgid "HestaHub:"
+msgstr "HestaHub:"
+
+msgid "HestaHub connection"
+msgstr "HestaHub-Verbindung"
+
+msgid "HestaHub answers"
+msgstr "HestaHub antwortet"
+
+msgid "The plugin reads from HestaHub without errors."
+msgstr "Das Plugin liest ohne Fehler von HestaHub."
+
+#. translators: %s: the site's name.
+#, php-format
+msgid "[%s] HestaHub needs attention"
+msgstr "[%s] HestaHub braucht Aufmerksamkeit"
+
+#. translators: 1: Apartments, Clinics, or both, 2: link to the settings screen.
+#, php-format
+msgid "Set a base path for %1$s to show them on your site: %2$s"
+msgstr "Lege einen Basispfad für %1$s fest, um sie auf deiner Website zu zeigen: %2$s"
+
+msgid "Settings → HestaHub"
+msgstr "Einstellungen → HestaHub"
+
+msgid "Dismiss"
+msgstr "Ausblenden"
+
+#. translators: 1: this plugin's version, 2: the minimum version HestaHub asks for.
+#, php-format
+msgid "HestaHub asks for version %2$s of its plugin or newer; this site runs %1$s. Please update the HestaHub plugin."
+msgstr "HestaHub verlangt Version %2$s des Plugins oder neuer; diese Website nutzt %1$s. Bitte aktualisiere das HestaHub-Plugin."
+
+msgid "This site runs on PHP 7. The HestaHub plugin still works, but PHP 7 no longer receives security updates. Ask your host to move the site to a current PHP version."
+msgstr "Diese Website läuft mit PHP 7. Das HestaHub-Plugin funktioniert weiter, aber PHP 7 bekommt keine Sicherheitsupdates mehr. Bitte deinen Host, die Website auf eine aktuelle PHP-Version umzustellen."
 
 #. translators: %s: floor area in square metres.
 #, php-format
@@ -202,9 +306,6 @@ msgstr "Diese Seiten sind noch erreichbar, hängen aber verwaist unter einem Bas
 
 msgid "Also shadowed, as a side effect: the page's feed, embed and trackback URLs:"
 msgstr "Nebenbei ebenfalls verdeckt: die Feed-, Embed- und Trackback-URLs der Seite:"
-
-msgid "Dismiss"
-msgstr "Ausblenden"
 
 msgid "All prices include VAT."
 msgstr "Alle Preise inkl. MwSt."

@@ -8,6 +8,7 @@ namespace HestaHub\Routing;
 use HestaHub\Admin\Settings;
 use HestaHub\Api\Client;
 use HestaHub\Feature;
+use HestaHub\Health\Probe;
 use HestaHub\Plugin;
 use HestaHub\Rendering\Renderer;
 
@@ -230,20 +231,26 @@ final class Routes implements Feature {
 	}
 
 	/**
-	 * Pads a 503 body past what page caches would store. Hooked late to
-	 * template_redirect, just before the template renders.
+	 * Pads a 503 body past what page caches would store, and marks a probed
+	 * one. Hooked late to template_redirect, just before the template renders.
 	 */
 	public function template_redirect(): void {
 		global $wp_query;
 		if ( ! $this->is_owned_route( $wp_query ) || self::UNAVAILABLE !== $this->resolve( $wp_query )['answer'] ) {
 			return;
 		}
+		$probe  = $this->resolve( $wp_query )['probe'];
+		$marker = null === $probe ? '' : "\n" . Probe::marker( $probe );
 		$length = 0;
 		ob_start(
-			function ( $buffer, $phase ) use ( &$length ) {
+			function ( $buffer, $phase ) use ( &$length, $marker ) {
 				$length += strlen( $buffer );
-				if ( ( $phase & PHP_OUTPUT_HANDLER_FINAL ) && $length <= self::MIN_503_BODY ) {
-					$buffer .= "\n<!-- " . str_repeat( '-', self::MIN_503_BODY - $length ) . ' -->';
+				if ( $phase & PHP_OUTPUT_HANDLER_FINAL ) {
+					$buffer .= $marker;
+					$length += strlen( $marker );
+					if ( $length <= self::MIN_503_BODY ) {
+						$buffer .= "\n<!-- " . str_repeat( '-', self::MIN_503_BODY - $length ) . ' -->';
+					}
 				}
 				return $buffer;
 			}
@@ -448,7 +455,8 @@ final class Routes implements Feature {
 	 *
 	 * @param \WP_Query $query The main query.
 	 * @return array resource, slug (null for the listing), template, answer,
-	 *               variables (the template's, when found) and result.
+	 *               variables (the template's, when found), result, and
+	 *               probe (the token of a 503 probe, else null).
 	 */
 	private function resolve( $query ): array {
 		if ( null !== $this->resolved ) {
@@ -469,6 +477,10 @@ final class Routes implements Feature {
 		} else {
 			$answer = $result->is_temporarily_unavailable() ? self::UNAVAILABLE : self::PLACEHOLDER;
 		}
+		$probe = Probe::requested();
+		if ( null !== $probe ) {
+			$answer = self::UNAVAILABLE; // "Test connection" checks what the host makes of a 503.
+		}
 
 		$this->resolved = array(
 			'resource'  => $resource,
@@ -477,6 +489,7 @@ final class Routes implements Feature {
 			'answer'    => $answer,
 			'variables' => $variables,
 			'result'    => $result,
+			'probe'     => $probe,
 		);
 		return $this->resolved;
 	}

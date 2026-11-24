@@ -84,7 +84,22 @@ final class Failure {
 	}
 
 	/**
+	 * Whether another failure is the same diagnosis: any two outages are;
+	 * verdicts are when status and code agree.
+	 *
+	 * @param Failure $other Another failure.
+	 */
+	public function same_diagnosis( Failure $other ): bool {
+		if ( $this->kind !== $other->kind ) {
+			return false;
+		}
+		return self::VERDICT !== $this->kind || ( $this->status === $other->status && $this->code === $other->code );
+	}
+
+	/**
 	 * For storage.
+	 *
+	 * @return array kind, status, code, message.
 	 */
 	public function to_array(): array {
 		return array( $this->kind, $this->status, $this->code, $this->message );
