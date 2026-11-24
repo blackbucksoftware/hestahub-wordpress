@@ -86,6 +86,44 @@ final class FormatTest extends WP_UnitTestCase {
 		$this->assertSame( '26. June 2027 – 28. August 2027', Format::period( array( 'first_day' => '2027-06-26', 'last_day' => '2027-08-28' ) ) );
 	}
 
+	public function test_when_a_clinic_runs_at_the_offset_received() {
+		update_option( 'date_format', 'd.m.Y' );
+		update_option( 'time_format', 'H:i' );
+		update_option( 'timezone_string', 'Asia/Tokyo' ); // Ignored: the instant carries the Tenant's offset.
+
+		$this->assertSame( '14.03.2027, 14:00 – 16.03.2027, 16:00', Format::when( '2027-03-14T14:00:00+01:00', '2027-03-16T16:00:00+01:00' ) );
+		$this->assertSame( '14.03.2027, 14:00–17:30', Format::when( '2027-03-14T14:00:00+01:00', '2027-03-14T17:30:00+01:00' ) );
+		$this->assertSame( '14.03.2027, 14:00', Format::when( '2027-03-14T14:00:00+01:00', null ), 'No set end.' );
+		$this->assertSame( '', Format::when( 'bald', null ) );
+	}
+
+	public function test_signup_states_and_unknown_values() {
+		$this->assertSame( 'Signup open', Format::signup( 'open' ) );
+		$this->assertSame( 'Waitlist only', Format::signup( 'waitlist' ) );
+		$this->assertSame( 'Fully booked', Format::signup( 'full' ) );
+		$this->assertSame( 'Signup closed', Format::signup( 'closed' ) );
+		$this->assertSame( 'Signup not yet open', Format::signup( 'not_yet_open' ) );
+		$this->assertSame( '', Format::signup( 'lotterie' ), 'An unknown state prints nothing.' );
+		$this->assertSame( '', Format::signup( null ) );
+	}
+
+	public function test_horses_and_unknown_values() {
+		$this->assertSame( 'Bring your own horse.', Format::horses( 'own_only' ) );
+		$this->assertSame( 'Bring your own horse or ride one of ours.', Format::horses( 'own_or_loan' ) );
+		$this->assertSame( 'No horses needed.', Format::horses( 'none' ) );
+		$this->assertSame( '', Format::horses( 'esel' ) );
+	}
+
+	public function test_a_signup_url_only_while_open_or_waitlist() {
+		$clinic = array( 'portal_url' => 'https://kronshof.hestahub.com/portal/x' );
+
+		$this->assertSame( $clinic['portal_url'], Format::signup_url( $clinic + array( 'signup' => 'open' ) ) );
+		$this->assertSame( $clinic['portal_url'], Format::signup_url( $clinic + array( 'signup' => 'waitlist' ) ) );
+		$this->assertNull( Format::signup_url( $clinic + array( 'signup' => 'full' ) ) );
+		$this->assertNull( Format::signup_url( $clinic + array( 'signup' => 'lotterie' ) ), 'Unknown: closed for any call to action.' );
+		$this->assertNull( Format::signup_url( array( 'signup' => 'open', 'portal_url' => null ) ) );
+	}
+
 	private function german(): void {
 		global $wp_locale;
 		$this->number_format      = $wp_locale->number_format;

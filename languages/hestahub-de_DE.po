@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:17+0100\n"
+"POT-Creation-Date: 2026-11-24 13:27+0100\n"
 "PO-Revision-Date: 2026-11-23 00:00+0000\n"
 "Last-Translator: Blackbuck Software\n"
 "Language-Team: German\n"
@@ -154,6 +154,35 @@ msgstr[1] "%s Nächte"
 msgid "%1$s–%2$s nights"
 msgstr "%1$s–%2$s Nächte"
 
+msgid "Signup not yet open"
+msgstr "Anmeldung noch nicht geöffnet"
+
+msgid "Signup open"
+msgstr "Anmeldung offen"
+
+msgid "Waitlist only"
+msgstr "Nur noch Warteliste"
+
+msgid "Fully booked"
+msgstr "Ausgebucht"
+
+msgid "Signup closed"
+msgstr "Anmeldung geschlossen"
+
+msgid "Bring your own horse."
+msgstr "Mit eigenem Pferd."
+
+msgid "Bring your own horse or ride one of ours."
+msgstr "Mit eigenem Pferd oder auf einem unserer Pferde."
+
+msgid "No horses needed."
+msgstr "Ohne Pferd."
+
+#. translators: 1: a date, 2: a time of day.
+#, php-format
+msgid "%1$s, %2$s"
+msgstr "%1$s, %2$s"
+
 #. translators: 1: Apartments or Clinics, 2: the base path, e.g. /apartments/.
 #, php-format
 msgid "The %1$s base path %2$s now shadows content on this site."
@@ -238,6 +267,42 @@ msgstr "Frühere Monate"
 
 msgid "Later months"
 msgstr "Spätere Monate"
+
+msgid "Only guests staying in one of our apartments can sign up."
+msgstr "Anmelden können sich nur Gäste, die in einer unserer Ferienwohnungen wohnen."
+
+#. translators: %s: the fee per rider.
+#, php-format
+msgid "%s per rider"
+msgstr "%s pro Reiter"
+
+#. translators: %s: the fee per loan horse.
+#, php-format
+msgid "%s per loan horse"
+msgstr "%s pro Leihpferd"
+
+#. translators: %s: the minimum number of participants.
+#, php-format
+msgid "Minimum %s participant"
+msgid_plural "Minimum %s participants"
+msgstr[0] "Mindestens %s Teilnehmer"
+msgstr[1] "Mindestens %s Teilnehmer"
+
+#. translators: %s: date and time signups open.
+#, php-format
+msgid "Signup opens %s"
+msgstr "Anmeldung ab %s"
+
+#. translators: %s: date and time signups close.
+#, php-format
+msgid "Signup closes %s"
+msgstr "Anmeldeschluss: %s"
+
+msgid "Join the waitlist"
+msgstr "Auf die Warteliste"
+
+msgid "Sign up"
+msgstr "Anmelden"
 
 msgid "There is nothing to show here at the moment. Please check back later."
 msgstr "Hier gibt es gerade nichts zu sehen. Schau bitte später wieder vorbei."
