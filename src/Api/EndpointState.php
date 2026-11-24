@@ -32,6 +32,9 @@ final class EndpointState {
 	/** @var int|null */
 	private $failing_since;
 
+	/** @var int|null */
+	private $stale_until;
+
 	/** @var Failure|null */
 	private $failure;
 
@@ -62,6 +65,7 @@ final class EndpointState {
 		}
 		$state->last_success  = self::int_or_null( $stored, 'last_success' );
 		$state->failing_since = self::int_or_null( $stored, 'failing_since' );
+		$state->stale_until   = self::int_or_null( $stored, 'stale_until' );
 		$state->failure       = Failure::from_array( isset( $stored['failure'] ) ? $stored['failure'] : null );
 		$state->outages       = (int) self::int_or_null( $stored, 'outages' );
 		$state->retry_at      = (int) self::int_or_null( $stored, 'retry_at' );
@@ -71,11 +75,13 @@ final class EndpointState {
 	/**
 	 * Records a successful fetch.
 	 *
-	 * @param int $now The current time.
+	 * @param int $now       The current time.
+	 * @param int $stale_ttl How long the body may be kept: its stale_ttl.
 	 */
-	public function succeeded( int $now ): void {
+	public function succeeded( int $now, int $stale_ttl ): void {
 		$this->reset();
 		$this->last_success = $now;
+		$this->stale_until  = $now + $stale_ttl;
 		$this->save();
 	}
 
@@ -137,6 +143,14 @@ final class EndpointState {
 	}
 
 	/**
+	 * When the last successful copy runs past its stale_ttl. Null if never
+	 * fetched.
+	 */
+	public function stale_until(): ?int {
+		return $this->stale_until;
+	}
+
+	/**
 	 * When the current run of failures began, or null when not failing.
 	 */
 	public function failing_since(): ?int {
@@ -155,6 +169,7 @@ final class EndpointState {
 	private function reset(): void {
 		$this->last_success  = null;
 		$this->failing_since = null;
+		$this->stale_until   = null;
 		$this->failure       = null;
 		$this->outages       = 0;
 		$this->retry_at      = 0;
@@ -167,6 +182,7 @@ final class EndpointState {
 				'tenant'        => $this->tenant,
 				'last_success'  => $this->last_success,
 				'failing_since' => $this->failing_since,
+				'stale_until'   => $this->stale_until,
 				'failure'       => $this->failure ? $this->failure->to_array() : null,
 				'outages'       => $this->outages,
 				'retry_at'      => $this->retry_at,

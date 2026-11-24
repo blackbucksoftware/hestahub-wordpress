@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 09:03+0100\n"
+"POT-Creation-Date: 2026-11-24 12:36+0100\n"
 "PO-Revision-Date: 2026-11-23 00:00+0000\n"
 "Last-Translator: Blackbuck Software\n"
 "Language-Team: German\n"
@@ -139,3 +139,12 @@ msgstr "Nebenbei ebenfalls verdeckt: die Feed-, Embed- und Trackback-URLs der Se
 
 msgid "Dismiss"
 msgstr "Ausblenden"
+
+msgid "There is nothing to show here at the moment. Please check back later."
+msgstr "Hier gibt es gerade nichts zu sehen. Schau bitte später wieder vorbei."
+
+msgid "Temporarily unavailable"
+msgstr "Vorübergehend nicht verfügbar"
+
+msgid "This page cannot be shown right now. Please try again in a little while."
+msgstr "Diese Seite kann gerade nicht angezeigt werden. Versuch es bitte in Kürze noch einmal."

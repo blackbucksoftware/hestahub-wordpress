@@ -37,6 +37,19 @@ final class Client {
 	 */
 	const META_MAX_AGE = 86400;
 
+	/**
+	 * The contract: with no copy to serve, answer 503 "for at most 24 hours",
+	 * then a placeholder.
+	 */
+	const UNAVAILABLE_FOR = 86400;
+
+	/**
+	 * Every slug a successful response of a resource ever listed, for the
+	 * Tenant: hestahub_listed_<resource>. The contract: during an outage, a
+	 * slug the plugin has never resolved answers 404.
+	 */
+	const LISTED_PREFIX = 'hestahub_listed_';
+
 	/** @var Credentials */
 	private $credentials;
 
@@ -67,7 +80,7 @@ final class Client {
 		$cached = $this->cached( $endpoint, $tenant, $now );
 
 		if ( $cached && $now < $cached['fetched_at'] + $this->soft_ttl( $endpoint, $cached['ttl'] ) ) {
-			return $this->result( $cached, false, $state, 0 );
+			return $this->result( $cached, false, $state, 0, $now );
 		}
 
 		if ( ! $this->credentials->is_complete() ) {
@@ -82,16 +95,19 @@ final class Client {
 
 		$wait = $state->wait( $now );
 		if ( $wait > 0 ) {
-			return $this->result( $cached, true, $state, $wait );
+			return $this->result( $cached, true, $state, $wait, $now );
 		}
 
 		$fetched = $this->fetch( $endpoint );
 		if ( $fetched instanceof Failure ) {
 			$wait = $state->failed( $fetched, $now );
-			return $this->result( $cached, true, $state, $wait );
+			return $this->result( $cached, true, $state, $wait, $now );
 		}
 
-		$state->succeeded( $now );
+		$state->succeeded( $now, $fetched['stale_ttl'] );
+		if ( in_array( $endpoint, self::RESOURCES, true ) ) {
+			$this->remember_slugs( $endpoint, $tenant, $fetched['data'] );
+		}
 		$fetched['fetched_at'] = $now;
 		$fetched['tenant']     = $tenant;
 		if ( $fetched['stale_ttl'] > 0 ) {
@@ -103,7 +119,7 @@ final class Client {
 			// The body says how long to keep it. Without that, keep nothing.
 			delete_option( $this->cache_key( $endpoint ) );
 		}
-		return $this->result( $fetched, false, $state, 0 );
+		return $this->result( $fetched, false, $state, 0, $now );
 	}
 
 	/**
@@ -136,6 +152,17 @@ final class Client {
 		$this->check_endpoint( $endpoint );
 		$copy = $this->cached( $endpoint, $this->credentials->tenant(), $this->now() );
 		return $copy ? $copy['data'] : null;
+	}
+
+	/**
+	 * Whether a successful response of a resource, for this Tenant, ever
+	 * listed this slug.
+	 *
+	 * @param string $resource apartments or clinics.
+	 * @param string $slug     The slug.
+	 */
+	public function ever_listed( string $resource, string $slug ): bool {
+		return isset( $this->listed_slugs( $resource, $this->credentials->tenant() )[ $slug ] );
 	}
 
 	/**
@@ -194,12 +221,53 @@ final class Client {
 	}
 
 	/**
+	 * Adds the slugs a response lists to those ever listed.
+	 *
+	 * @param string $resource apartments or clinics.
+	 * @param string $tenant   The Tenant's subdomain.
+	 * @param array  $data     The response's data.
+	 */
+	private function remember_slugs( string $resource, string $tenant, array $data ): void {
+		$known = $this->listed_slugs( $resource, $tenant );
+		$all   = $known;
+		foreach ( $data as $item ) {
+			if ( is_array( $item ) && isset( $item['slug'] ) && is_string( $item['slug'] ) ) {
+				$all[ $item['slug'] ] = true;
+			}
+		}
+		if ( count( $all ) !== count( $known ) ) {
+			update_option(
+				self::LISTED_PREFIX . $resource,
+				array(
+					'tenant' => $tenant,
+					'slugs'  => $all,
+				),
+				false
+			);
+		}
+	}
+
+	/**
+	 * @param string $resource apartments or clinics.
+	 * @param string $tenant   The Tenant's subdomain.
+	 * @return array<string, true>
+	 */
+	private function listed_slugs( string $resource, string $tenant ): array {
+		$stored = get_option( self::LISTED_PREFIX . $resource );
+		if ( ! is_array( $stored ) || ! isset( $stored['tenant'], $stored['slugs'] ) || $stored['tenant'] !== $tenant || ! is_array( $stored['slugs'] ) ) {
+			return array();
+		}
+		return $stored['slugs'];
+	}
+
+	/**
 	 * @param array|null    $copy  The copy to serve, if any.
 	 * @param bool          $stale Whether a served copy is past its ttl.
 	 * @param EndpointState $state The endpoint's state.
 	 * @param int           $wait  Seconds until the next fetch may be tried.
+	 * @param int           $now   The current time.
 	 */
-	private function result( $copy, bool $stale, EndpointState $state, int $wait ): Result {
+	private function result( $copy, bool $stale, EndpointState $state, int $wait, int $now ): Result {
 		return new Result(
 			array(
 				'copy'          => $copy,
@@ -208,8 +276,30 @@ final class Client {
 				'retry_after'   => $wait,
 				'last_success'  => $state->last_success(),
 				'failing_since' => $state->failing_since(),
+				'unavailable'   => ! $copy && $this->is_unavailable( $state, $now ),
 			)
 		);
+	}
+
+	/**
+	 * Whether a failing endpoint with no copy is still within the 24 hours of
+	 * 503, counted from when its last copy stopped being servable: its
+	 * stale_ttl ran out, or, gone early ("refresh now"), no later than the
+	 * current failures began. An install that never fetched counts from its
+	 * first failure.
+	 *
+	 * @param EndpointState $state The endpoint's state.
+	 * @param int           $now   The current time.
+	 */
+	private function is_unavailable( EndpointState $state, int $now ): bool {
+		if ( ! $state->failure() ) {
+			return false;
+		}
+		$since = $state->stale_until();
+		if ( null === $since || $since > $now ) {
+			$since = $state->failing_since();
+		}
+		return null !== $since && $now < $since + self::UNAVAILABLE_FOR;
 	}
 
 	/**

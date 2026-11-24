@@ -30,10 +30,14 @@ final class Result {
 	/** @var int|null */
 	private $failing_since;
 
+	/** @var bool */
+	private $unavailable;
+
 	/**
 	 * @param array $parts copy (data, revision, currency, prices_include_tax,
 	 *                     fetched_at) or null; stale; failure (Failure|null);
-	 *                     retry_after; last_success; failing_since.
+	 *                     retry_after; last_success; failing_since;
+	 *                     unavailable.
 	 */
 	public function __construct( array $parts ) {
 		$this->copy          = isset( $parts['copy'] ) ? $parts['copy'] : null;
@@ -42,6 +46,7 @@ final class Result {
 		$this->retry_after   = isset( $parts['retry_after'] ) ? (int) $parts['retry_after'] : 0;
 		$this->last_success  = isset( $parts['last_success'] ) ? (int) $parts['last_success'] : null;
 		$this->failing_since = isset( $parts['failing_since'] ) ? (int) $parts['failing_since'] : null;
+		$this->unavailable   = ! empty( $parts['unavailable'] );
 	}
 
 	/**
@@ -124,6 +129,15 @@ final class Result {
 	 */
 	public function failing_since(): ?int {
 		return $this->failing_since;
+	}
+
+	/**
+	 * Whether there is no copy and the render ladder is on its 503 step:
+	 * failing, and within 24 hours of losing the last copy (or, never having
+	 * fetched, of the first failure). Past that, a placeholder answers 200.
+	 */
+	public function is_temporarily_unavailable(): bool {
+		return $this->unavailable;
 	}
 
 	/**
