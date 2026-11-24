@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:10+0100\n"
+"POT-Creation-Date: 2026-11-24 13:17+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -178,6 +178,27 @@ msgstr ""
 msgid "All prices include VAT."
 msgstr ""
 
+msgid "Free"
+msgstr ""
+
+msgid "Arrival"
+msgstr ""
+
+msgid "Booked"
+msgstr ""
+
+msgid "Departure"
+msgstr ""
+
+msgid "Changeover"
+msgstr ""
+
+msgid "Past"
+msgstr ""
+
+msgid "Not known"
+msgstr ""
+
 msgid "Apartment"
 msgstr ""
 
@@ -206,6 +227,20 @@ msgid "Availability"
 msgstr ""
 
 msgid "Book now"
+msgstr ""
+
+#. translators: %s: the date and time the availability was last fetched.
+#, php-format
+msgid "As of %s"
+msgstr ""
+
+msgid "Calendar months"
+msgstr ""
+
+msgid "Earlier months"
+msgstr ""
+
+msgid "Later months"
 msgstr ""
 
 msgid "There is nothing to show here at the moment. Please check back later."

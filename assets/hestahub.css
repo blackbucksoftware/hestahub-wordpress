@@ -9,6 +9,7 @@
  *   --hestahub-day-arrival      Background of a day a stay starts.
  *   --hestahub-day-departure    Background of a day a stay ends.
  *   --hestahub-day-changeover   Background of a day one stay ends and another starts.
+ *   --hestahub-day-past         Background of a day before today.
  *   --hestahub-day-unknown      Background of a day outside what is known.
  *
  * Unset, every day state is transparent; the calendar then tells booked
@@ -63,15 +64,58 @@
 	width: 100%;
 }
 
-.hestahub-calendar {
+.hestahub-months {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
 	gap: var(--hestahub-gap, 1.5rem);
 }
 
-.hestahub-month {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
+.hestahub table.hestahub-month {
+	table-layout: fixed;
+}
+
+.hestahub-month td,
+.hestahub-month th {
+	text-align: center;
+}
+
+.hestahub-calendar-nav {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--hestahub-gap, 1.5rem);
+}
+
+.hestahub-calendar-next {
+	margin-inline-start: auto;
+}
+
+.hestahub-legend {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.5rem;
+}
+
+.hestahub-legend-swatch {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	vertical-align: middle;
+	border: 1px solid;
+}
+
+.hestahub-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 
 .hestahub-day--free {
@@ -92,6 +136,10 @@
 
 .hestahub-day--changeover {
 	background: var(--hestahub-day-changeover, transparent);
+}
+
+.hestahub-day--past {
+	background: var(--hestahub-day-past, transparent);
 }
 
 .hestahub-day--unknown {
