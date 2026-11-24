@@ -59,6 +59,8 @@ if ( ! function_exists( 'hestahub_amount' ) ) {
 	/**
 	 * An amount for the site's locale with the currency of the data being
 	 * rendered: "95,00 €". Formatted from the decimal string, never computed.
+	 * Outside a template the plugin renders, there is no such data, and the
+	 * amount prints without a currency.
 	 *
 	 * @param mixed $amount A decimal string as received.
 	 */
@@ -131,6 +133,33 @@ if ( ! function_exists( 'hestahub_period' ) ) {
 	 */
 	function hestahub_period( array $period ): string {
 		return \HestaHub\Rendering\Format::period( $period );
+	}
+}
+
+if ( ! function_exists( 'hestahub_text' ) ) {
+	/**
+	 * A text field of an object as received; empty when it is missing,
+	 * null or not text.
+	 *
+	 * @param mixed  $object An object as received.
+	 * @param string $key    The field.
+	 */
+	function hestahub_text( $object, string $key ): string {
+		return is_array( $object ) && isset( $object[ $key ] ) && is_string( $object[ $key ] ) ? $object[ $key ] : '';
+	}
+}
+
+if ( ! function_exists( 'hestahub_facts' ) ) {
+	/**
+	 * An Apartment's facts in words, keyed by kind (building, size,
+	 * persons): "Alte Scheune", "58 m²", "Up to 4 persons". A null leaves
+	 * its fact out, never prints 0.
+	 *
+	 * @param array $apartment An Apartment as received.
+	 * @return array<string, string>
+	 */
+	function hestahub_facts( array $apartment ): array {
+		return \HestaHub\Rendering\Format::facts( $apartment );
 	}
 }
 

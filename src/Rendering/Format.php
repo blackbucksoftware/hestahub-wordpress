@@ -83,6 +83,29 @@ final class Format {
 	}
 
 	/**
+	 * An Apartment's facts in words, keyed by kind: building, size,
+	 * persons. A null leaves its fact out.
+	 *
+	 * @param array $apartment An Apartment as received.
+	 * @return array<string, string>
+	 */
+	public static function facts( array $apartment ): array {
+		$facts = array();
+		if ( isset( $apartment['building']['name'] ) && is_string( $apartment['building']['name'] ) && '' !== $apartment['building']['name'] ) {
+			$facts['building'] = $apartment['building']['name'];
+		}
+		if ( isset( $apartment['qm'] ) && is_int( $apartment['qm'] ) ) {
+			/* translators: %s: floor area in square metres. */
+			$facts['size'] = sprintf( __( '%s m²', 'hestahub' ), number_format_i18n( $apartment['qm'] ) );
+		}
+		if ( isset( $apartment['max_persons'] ) && is_int( $apartment['max_persons'] ) ) {
+			/* translators: %s: the maximum number of persons. */
+			$facts['persons'] = sprintf( _n( 'Up to %s person', 'Up to %s persons', $apartment['max_persons'], 'hestahub' ), number_format_i18n( $apartment['max_persons'] ) );
+		}
+		return $facts;
+	}
+
+	/**
 	 * A tier's night range, in words: "3–6 nights", "7+ nights", "3 nights".
 	 *
 	 * @param array $tier A tier as received.

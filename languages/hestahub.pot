@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:07+0100\n"
+"POT-Creation-Date: 2026-11-24 13:10+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -127,6 +127,18 @@ msgstr ""
 msgid "Apartments"
 msgstr ""
 
+#. translators: %s: floor area in square metres.
+#, php-format
+msgid "%s m²"
+msgstr ""
+
+#. translators: %s: the maximum number of persons.
+#, php-format
+msgid "Up to %s person"
+msgid_plural "Up to %s persons"
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %s: the minimum number of nights. An open-ended tier, e.g. "7+ nights".
 #, php-format
 msgid "%s+ night"
@@ -165,18 +177,6 @@ msgstr ""
 
 msgid "All prices include VAT."
 msgstr ""
-
-#. translators: %s: floor area in square metres.
-#, php-format
-msgid "%s m²"
-msgstr ""
-
-#. translators: %s: the maximum number of persons.
-#, php-format
-msgid "Up to %s person"
-msgid_plural "Up to %s persons"
-msgstr[0] ""
-msgstr[1] ""
 
 msgid "Apartment"
 msgstr ""

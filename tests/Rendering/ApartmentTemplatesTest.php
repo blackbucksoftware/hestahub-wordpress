@@ -330,6 +330,47 @@ final class ApartmentTemplatesTest extends WP_UnitTestCase {
 		$this->assertSame( '', $xpath->evaluate( 'string(//section[1]//table[@class="hestahub-tiers"]/tbody/tr[1]/td[2])' ) );
 	}
 
+	public function test_without_any_cleaning_fee_the_rate_table_has_no_cleaning_column_or_note() {
+		$this->respond(
+			200,
+			$this->example(
+				'apartments',
+				function ( $body ) {
+					foreach ( $body['data'][0]['pricing']['seasons'] as $s => $season ) {
+						foreach ( array( 'tiers', 'bundles' ) as $kind ) {
+							foreach ( $season[ $kind ] as $r => $row ) {
+								$body['data'][0]['pricing']['seasons'][ $s ][ $kind ][ $r ]['final_cleaning_fee'] = '0.00';
+							}
+						}
+					}
+					return $body;
+				}
+			)
+		);
+
+		$html = $this->html( 'rate-table', 'hoettur' );
+
+		$this->assertStringNotContainsString( 'Final cleaning', $html );
+		$this->assertStringNotContainsString( 'final cleaning', $html );
+	}
+
+	public function test_a_season_without_a_name_heads_its_column_with_nothing_never_its_key() {
+		$this->respond(
+			200,
+			$this->example(
+				'apartments',
+				function ( $body ) {
+					$body['data'][0]['pricing']['seasons'][1]['name'] = null;
+					return $body;
+				}
+			)
+		);
+
+		$xpath = $this->render( 'apartment-listing' );
+
+		$this->assertSame( array( 'Apartment', 'Nebensaison', '', 'Final cleaning' ), $this->texts( $xpath, '//table[@class="hestahub-rates"]/thead//th' ) );
+	}
+
 	public function test_the_rate_table_says_prices_include_vat_only_when_the_envelope_does() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 		$this->assertStringContainsString( 'All prices include VAT.', $this->html( 'rate-table', 'hoettur' ) );
