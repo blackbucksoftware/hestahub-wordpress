@@ -1,8 +1,8 @@
 <?php
 /**
  * What an owned route shows once its data has been gone for more than a day,
- * sent with a 200. A theme overrides it by copying it to
- * <theme>/hestahub/placeholder.php. It must say nothing operational: no error,
+ * sent with a 200. The plugin's own: not among the templates a theme
+ * overrides. It must say nothing operational: no error,
  * no diagnostic, no version.
  *
  * @package HestaHub

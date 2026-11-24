@@ -42,7 +42,8 @@ final class Routes implements Feature {
 	);
 
 	/**
-	 * What an owned route answers.
+	 * What an owned route answers. Each no-data answer names its page in
+	 * templates/no-data/.
 	 */
 	const FOUND       = 'found';
 	const NOT_FOUND   = 'not_found';
@@ -243,26 +244,21 @@ final class Routes implements Feature {
 	}
 
 	/**
-	 * The theme's copy of the route's template, else the plugin's.
+	 * The theme's copy of the route's template, else the plugin's. The
+	 * no-data pages are the plugin's own: the contract names the templates
+	 * a theme may override, and they are not among them.
 	 *
 	 * @param string $template The template WordPress chose.
 	 */
 	public function template_include( $template ) {
-		global $wp_query;
-		if ( ! $this->is_owned_route( $wp_query ) || is_404() ) {
+		$resolved = $this->current();
+		if ( null === $resolved ) {
 			return $template;
 		}
-		$resolved = $this->resolve( $wp_query );
-		switch ( $resolved['answer'] ) {
-			case self::UNAVAILABLE:
-				$name = 'unavailable';
-				break;
-			case self::PLACEHOLDER:
-				$name = 'placeholder';
-				break;
-			default:
-				$name = self::TEMPLATES[ $resolved['resource'] ][ null === $resolved['slug'] ? 0 : 1 ];
+		if ( self::FOUND !== $resolved['answer'] ) {
+			return $this->dir . '/templates/no-data/' . $resolved['answer'] . '.php';
 		}
+		$name  = self::TEMPLATES[ $resolved['resource'] ][ null === $resolved['slug'] ? 0 : 1 ];
 		$theme = locate_template( 'hestahub/' . $name . '.php' );
 		return $theme ? $theme : $this->dir . '/templates/' . $name . '.php';
 	}
@@ -323,6 +319,7 @@ final class Routes implements Feature {
 	 */
 	private function send_503( int $retry_after ): void {
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			// Already defined, even as false, it cannot be redefined.
 			define( 'DONOTCACHEPAGE', true );
 		}
 		do_action( 'litespeed_control_set_nocache' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache's hook.
@@ -336,12 +333,11 @@ final class Routes implements Feature {
 	 * and on a 404.
 	 */
 	private function canonical_url(): ?string {
-		global $wp_query;
-		if ( ! $this->is_owned_route( $wp_query ) || is_404() ) {
+		$resolved = $this->current();
+		if ( null === $resolved ) {
 			return null;
 		}
-		$resolved = $this->resolve( $wp_query );
-		$path     = $this->bases()[ $resolved['resource'] ];
+		$path = $this->bases()[ $resolved['resource'] ];
 		if ( null !== $resolved['slug'] ) {
 			$path .= '/' . $resolved['slug'];
 		}
@@ -353,12 +349,11 @@ final class Routes implements Feature {
 	 * off an owned route and on a 404.
 	 */
 	private function title(): ?string {
-		global $wp_query;
-		if ( ! $this->is_owned_route( $wp_query ) || is_404() ) {
+		$resolved = $this->current();
+		if ( null === $resolved ) {
 			return null;
 		}
-		$resolved = $this->resolve( $wp_query );
-		$item     = $resolved['item'];
+		$item = $resolved['item'];
 		if ( is_array( $item ) && isset( $item['name'] ) && is_string( $item['name'] ) && '' !== $item['name'] ) {
 			return $item['name'];
 		}
@@ -394,6 +389,20 @@ final class Routes implements Feature {
 	 */
 	private function is_owned_route( $query ): bool {
 		return $query instanceof \WP_Query && array_key_exists( (string) $query->get( self::QV_RESOURCE ), $this->bases() );
+	}
+
+	/**
+	 * What the owned route this request is on resolved to; null off one and
+	 * on a 404.
+	 *
+	 * @return array|null See resolve().
+	 */
+	private function current(): ?array {
+		global $wp_query;
+		if ( ! $this->is_owned_route( $wp_query ) || is_404() ) {
+			return null;
+		}
+		return $this->resolve( $wp_query );
 	}
 
 	/**

@@ -86,18 +86,6 @@ final class EndpointState {
 	}
 
 	/**
-	 * Records that the copy was discarded before its stale_ttl. For "refresh now".
-	 *
-	 * @param int $now The current time.
-	 */
-	public function copy_dropped( int $now ): void {
-		if ( null !== $this->stale_until && $this->stale_until > $now ) {
-			$this->stale_until = $now;
-			$this->save();
-		}
-	}
-
-	/**
 	 * Records a failed fetch and returns how long to wait before the next.
 	 *
 	 * @param Failure $failure The failure.
@@ -155,8 +143,8 @@ final class EndpointState {
 	}
 
 	/**
-	 * When the last copy stopped being servable: past its stale_ttl, or
-	 * discarded. Null if never fetched.
+	 * When the last successful copy runs past its stale_ttl. Null if never
+	 * fetched.
 	 */
 	public function stale_until(): ?int {
 		return $this->stale_until;

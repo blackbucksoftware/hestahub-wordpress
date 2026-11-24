@@ -174,9 +174,7 @@ final class Client {
 		$tenant = $this->credentials->tenant();
 		foreach ( self::ENDPOINTS as $endpoint ) {
 			delete_option( $this->cache_key( $endpoint ) );
-			$state = EndpointState::load( $endpoint, $tenant );
-			$state->copy_dropped( $this->now() );
-			$state->retry_now();
+			EndpointState::load( $endpoint, $tenant )->retry_now();
 		}
 	}
 
@@ -285,8 +283,10 @@ final class Client {
 
 	/**
 	 * Whether a failing endpoint with no copy is still within the 24 hours of
-	 * 503, counted from when its last copy stopped being servable, or for an
-	 * install that never fetched, from its first failure.
+	 * 503, counted from when its last copy stopped being servable: its
+	 * stale_ttl ran out, or, gone early ("refresh now"), no later than the
+	 * current failures began. An install that never fetched counts from its
+	 * first failure.
 	 *
 	 * @param EndpointState $state The endpoint's state.
 	 * @param int           $now   The current time.
@@ -295,7 +295,10 @@ final class Client {
 		if ( ! $state->failure() ) {
 			return false;
 		}
-		$since = null !== $state->stale_until() ? $state->stale_until() : $state->failing_since();
+		$since = $state->stale_until();
+		if ( null === $since || $since > $now ) {
+			$since = $state->failing_since();
+		}
 		return null !== $since && $now < $since + self::UNAVAILABLE_FOR;
 	}
 

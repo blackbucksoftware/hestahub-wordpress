@@ -1,8 +1,8 @@
 <?php
 /**
  * What an owned route shows while its data is temporarily unavailable, sent
- * with a 503. A theme overrides it by copying it to
- * <theme>/hestahub/unavailable.php. It must say nothing operational: no error,
+ * with a 503. The plugin's own: not among the templates a theme
+ * overrides. It must say nothing operational: no error,
  * no diagnostic, no version.
  *
  * @package HestaHub

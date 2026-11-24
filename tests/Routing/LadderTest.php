@@ -70,7 +70,7 @@ final class LadderTest extends WP_UnitTestCase {
 
 		$this->assertSame( 503, $this->status );
 		$this->assertContains( 'Retry-After: 60', $this->headers, 'The first back-off step.' );
-		$this->assertStringEndsWith( '/templates/unavailable.php', $this->template() );
+		$this->assertStringEndsWith( '/templates/no-data/unavailable.php', $this->template() );
 		$this->assertFalse( is_404() );
 	}
 
@@ -83,7 +83,7 @@ final class LadderTest extends WP_UnitTestCase {
 		$this->request( '/wohnungen/hoettur/' );
 
 		$this->assertSame( 503, $this->status );
-		$this->assertStringEndsWith( '/templates/unavailable.php', $this->template() );
+		$this->assertStringEndsWith( '/templates/no-data/unavailable.php', $this->template() );
 	}
 
 	public function test_after_24_hours_without_data_it_answers_200_with_a_placeholder() {
@@ -96,7 +96,7 @@ final class LadderTest extends WP_UnitTestCase {
 
 		$this->assertSame( 200, $this->status );
 		$this->assertFalse( is_404() );
-		$this->assertStringEndsWith( '/templates/placeholder.php', $this->template() );
+		$this->assertStringEndsWith( '/templates/no-data/placeholder.php', $this->template() );
 		$this->assertSame( array(), $this->headers, 'No Retry-After on a 200.' );
 	}
 
@@ -109,7 +109,7 @@ final class LadderTest extends WP_UnitTestCase {
 		$this->request( '/wohnungen/' );
 
 		$this->assertSame( 200, $this->status );
-		$this->assertStringEndsWith( '/templates/placeholder.php', $this->template() );
+		$this->assertStringEndsWith( '/templates/no-data/placeholder.php', $this->template() );
 	}
 
 	public function test_refresh_now_during_an_outage_starts_the_24_hours_then() {
@@ -125,7 +125,7 @@ final class LadderTest extends WP_UnitTestCase {
 		$this->request( '/wohnungen/' );
 
 		$this->assertSame( 200, $this->status, 'At most 24 hours of 503.' );
-		$this->assertStringEndsWith( '/templates/placeholder.php', $this->template() );
+		$this->assertStringEndsWith( '/templates/no-data/placeholder.php', $this->template() );
 	}
 
 	public function test_without_credentials_it_answers_200_with_a_placeholder() {
@@ -135,7 +135,7 @@ final class LadderTest extends WP_UnitTestCase {
 
 		$this->assertCount( 0, $this->requests );
 		$this->assertSame( 200, $this->status, 'Nothing to retry, so no 503.' );
-		$this->assertStringEndsWith( '/templates/placeholder.php', $this->template() );
+		$this->assertStringEndsWith( '/templates/no-data/placeholder.php', $this->template() );
 	}
 
 	public function test_a_slug_never_resolved_answers_404_during_an_outage() {
@@ -167,7 +167,7 @@ final class LadderTest extends WP_UnitTestCase {
 		$this->request( '/wohnungen/hoettur/' );
 
 		$this->assertSame( 200, $this->status );
-		$this->assertStringEndsWith( '/templates/placeholder.php', $this->template() );
+		$this->assertStringEndsWith( '/templates/no-data/placeholder.php', $this->template() );
 	}
 
 	/**
