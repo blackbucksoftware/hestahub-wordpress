@@ -190,13 +190,13 @@ if ( ! function_exists( 'hestahub_url' ) ) {
 	}
 }
 
-if ( ! function_exists( 'hestahub_stand' ) ) {
+if ( ! function_exists( 'hestahub_as_of' ) ) {
 	/**
 	 * When the data being rendered was fetched, in the site's date and time
-	 * format: the last successful fetch, fresh or stale. Empty outside a
-	 * template the plugin renders.
+	 * format: the last successful fetch, fresh or stale. The calendar's
+	 * "Stand:" line. Empty outside a template the plugin renders.
 	 */
-	function hestahub_stand(): string {
+	function hestahub_as_of(): string {
 		$fetched_at = hestahub_envelope()['fetched_at'];
 		return null === $fetched_at ? '' : (string) wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $fetched_at );
 	}
@@ -211,56 +211,51 @@ if ( ! function_exists( 'hestahub_calendar' ) ) {
 	 * @param array $availability The Apartment's availability entry as received.
 	 * @param array $window       The window: from, to.
 	 * @return array months (each: month, label, weeks of days with date, day
-	 *               and state, or null), weekdays, states (state => label),
-	 *               previous and next (URLs, or null).
+	 *               and state, or null), weekdays, states (state => label, in
+	 *               legend order), previous and next (URLs, or null).
 	 */
 	function hestahub_calendar( array $availability, array $window ): array {
 		global $wp_locale;
-		$calendar = new \HestaHub\Rendering\Calendar( $availability, $window, (string) wp_date( 'Y-m-d' ), (int) get_option( 'start_of_week', 1 ) );
-		$asked    = get_query_var( \HestaHub\Routing\Routes::QV_MONTH );
-		if ( '' === $asked && isset( $_GET[ \HestaHub\Routing\Routes::QV_MONTH ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- a page of a public calendar.
-			$asked = sanitize_text_field( wp_unslash( $_GET[ \HestaHub\Routing\Routes::QV_MONTH ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		}
-		$start = $calendar->page( $asked );
-		$first = $calendar->page( null );
-		$url   = static function ( ?string $month ) use ( $first ): ?string {
+		$start_of_week = (int) get_option( 'start_of_week', 1 );
+		$calendar      = new \HestaHub\Rendering\Calendar( $availability, $window, (string) wp_date( 'Y-m-d' ), $start_of_week );
+		$start         = $calendar->page( get_query_var( \HestaHub\Routing\Routes::QV_MONTH ) );
+		$first         = $calendar->page( null );
+		$url           = static function ( ?string $month ) use ( $first ): ?string {
 			if ( null === $month ) {
 				return null;
 			}
 			return $month === $first ? remove_query_arg( \HestaHub\Routing\Routes::QV_MONTH ) : add_query_arg( \HestaHub\Routing\Routes::QV_MONTH, $month );
 		};
 
-		$utc    = new \DateTimeZone( 'UTC' );
 		$months = array();
 		foreach ( $calendar->months( $start ) as $month ) {
-			$month['label'] = (string) wp_date( 'F Y', ( new \DateTimeImmutable( $month['month'] . '-01', $utc ) )->getTimestamp(), $utc );
-			foreach ( $month['weeks'] as $w => $week ) {
-				foreach ( $week as $d => $day ) {
-					if ( null !== $day ) {
-						$month['weeks'][ $w ][ $d ]['day'] = (int) substr( $day['date'], 8, 2 );
-					}
-				}
-			}
-			$months[] = $month;
+			$month['label'] = (string) wp_date( 'F Y', \HestaHub\Rendering\Calendar::date( $month['month'] . '-01' )->getTimestamp(), new \DateTimeZone( 'UTC' ) );
+			$months[]       = $month;
 		}
 
 		$weekdays = array();
 		for ( $i = 0; $i < 7; $i++ ) {
-			$weekdays[] = $wp_locale->get_weekday_abbrev( $wp_locale->get_weekday( ( (int) get_option( 'start_of_week', 1 ) + $i ) % 7 ) );
+			$weekdays[] = $wp_locale->get_weekday_abbrev( $wp_locale->get_weekday( ( $start_of_week + $i ) % 7 ) );
+		}
+
+		$labels = array(
+			\HestaHub\Rendering\Calendar::FREE       => __( 'Free', 'hestahub' ),
+			\HestaHub\Rendering\Calendar::ARRIVAL    => __( 'Arrival', 'hestahub' ),
+			\HestaHub\Rendering\Calendar::BOOKED     => __( 'Booked', 'hestahub' ),
+			\HestaHub\Rendering\Calendar::DEPARTURE  => __( 'Departure', 'hestahub' ),
+			\HestaHub\Rendering\Calendar::CHANGEOVER => __( 'Changeover', 'hestahub' ),
+			\HestaHub\Rendering\Calendar::PAST       => __( 'Past', 'hestahub' ),
+			\HestaHub\Rendering\Calendar::UNKNOWN    => __( 'Not known', 'hestahub' ),
+		);
+		$states = array();
+		foreach ( \HestaHub\Rendering\Calendar::STATES as $state ) {
+			$states[ $state ] = $labels[ $state ];
 		}
 
 		return array(
 			'months'   => $months,
 			'weekdays' => $weekdays,
-			'states'   => array(
-				\HestaHub\Rendering\Calendar::FREE       => __( 'Free', 'hestahub' ),
-				\HestaHub\Rendering\Calendar::ARRIVAL    => __( 'Arrival', 'hestahub' ),
-				\HestaHub\Rendering\Calendar::BOOKED     => __( 'Booked', 'hestahub' ),
-				\HestaHub\Rendering\Calendar::DEPARTURE  => __( 'Departure', 'hestahub' ),
-				\HestaHub\Rendering\Calendar::CHANGEOVER => __( 'Changeover', 'hestahub' ),
-				\HestaHub\Rendering\Calendar::PAST       => __( 'Past', 'hestahub' ),
-				\HestaHub\Rendering\Calendar::UNKNOWN    => __( 'Not known', 'hestahub' ),
-			),
+			'states'   => $states,
 			'previous' => $url( $calendar->previous( $start ) ),
 			'next'     => $url( $calendar->next( $start ) ),
 		);

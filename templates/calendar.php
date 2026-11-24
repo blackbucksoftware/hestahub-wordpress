@@ -12,7 +12,7 @@
  *                          Either may be null. A day outside the window, or
  *                          with no window, is unknown, never free.
  *
- * hestahub_calendar() derives the months and day states; hestahub_stand() the
+ * hestahub_calendar() derives the months and day states; hestahub_as_of() the
  * "As of" ("Stand:") line, which is always shown, fresh or stale.
  *
  * @package HestaHub
@@ -20,14 +20,14 @@
 
 defined( 'ABSPATH' ) || exit;
 $hestahub_calendar = hestahub_calendar( $availability, $window );
-$hestahub_stand    = hestahub_stand();
+$hestahub_as_of    = hestahub_as_of();
 ?>
 <div class="hestahub hestahub-calendar">
-	<?php if ( '' !== $hestahub_stand ) : ?>
+	<?php if ( '' !== $hestahub_as_of ) : ?>
 		<p class="hestahub-stand">
 			<?php
 			/* translators: %s: the date and time the availability was last fetched. */
-			echo esc_html( sprintf( __( 'As of %s', 'hestahub' ), $hestahub_stand ) );
+			echo esc_html( sprintf( __( 'As of %s', 'hestahub' ), $hestahub_as_of ) );
 			?>
 		</p>
 	<?php endif; ?>

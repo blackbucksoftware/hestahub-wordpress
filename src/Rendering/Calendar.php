@@ -67,8 +67,10 @@ final class Calendar {
 	public function __construct( array $availability, array $window, string $today, int $start_of_week = 1 ) {
 		$this->from          = self::date_or_null( $window['from'] ?? null );
 		$this->to            = self::date_or_null( $window['to'] ?? null );
-		$this->today         = $today;
 		$this->start_of_week = $start_of_week;
+		// The window starts on the Tenant's today. A site whose clock is
+		// still on yesterday must not show that day as unknown.
+		$this->today = null !== $this->from && $this->from > $today ? $this->from : $today;
 
 		$blocked = isset( $availability['blocked'] ) && is_array( $availability['blocked'] ) ? $availability['blocked'] : array();
 		foreach ( $blocked as $range ) {
@@ -77,15 +79,14 @@ final class Calendar {
 			if ( null === $from || null === $to || $from >= $to ) {
 				continue;
 			}
-			$this->ranges[] = array(
+			// A range under way at the window's start needs no clipping: its
+			// earlier days are past or unknown before any range is looked at.
+			$this->ranges[]        = array(
 				'from' => $from,
 				'to'   => $to,
 			);
-			// A range already under way at the window's start is clipped: it has no arrival here.
-			if ( null === $this->from || $from >= $this->from ) {
-				$this->starts[ $from ] = true;
-			}
-			$this->ends[ $to ] = true;
+			$this->starts[ $from ] = true;
+			$this->ends[ $to ]     = true;
 		}
 	}
 
@@ -107,7 +108,6 @@ final class Calendar {
 			return self::CHANGEOVER;
 		}
 		foreach ( $this->ranges as $range ) {
-			// Inside a stay, or at the window's start inside one already under way.
 			if ( $range['from'] < $date && $date < $range['to'] ) {
 				return self::BOOKED;
 			}
@@ -122,18 +122,22 @@ final class Calendar {
 	}
 
 	/**
-	 * The first month of the page asked for (YYYY-MM), kept between the
-	 * current month and the last month with a known day.
+	 * The first month of the page asked for (YYYY-MM): the current month
+	 * when asked for nothing valid or earlier, the last full page when
+	 * asked for a month past the window.
 	 *
 	 * @param mixed $month The month asked for, e.g. from the query string.
 	 */
 	public function page( $month ): string {
-		$first = substr( $this->today, 0, 7 );
-		$last  = $this->last_month();
+		$first = $this->first_month();
 		if ( ! is_string( $month ) || ! preg_match( '/^\d{4}-(0[1-9]|1[0-2])$/', $month ) || $month < $first ) {
 			return $first;
 		}
-		return $month > $last ? $last : $month;
+		if ( $month > $this->last_month() ) {
+			$last_page = self::add_months( $this->last_month(), 1 - self::MONTHS );
+			return $last_page < $first ? $first : $last_page;
+		}
+		return $month;
 	}
 
 	/**
@@ -142,7 +146,7 @@ final class Calendar {
 	 * @param string $start The page's first month, YYYY-MM.
 	 */
 	public function previous( string $start ): ?string {
-		$first = substr( $this->today, 0, 7 );
+		$first = $this->first_month();
 		if ( $start <= $first ) {
 			return null;
 		}
@@ -165,7 +169,8 @@ final class Calendar {
 	 * month is null.
 	 *
 	 * @param string $start The first month, YYYY-MM.
-	 * @return array[] month (YYYY-MM), weeks (arrays of date and state, or null).
+	 * @return array[] month (YYYY-MM), weeks (arrays of date, day of the month
+	 *                 and state, or null).
 	 */
 	public function months( string $start ): array {
 		$months = array();
@@ -184,13 +189,14 @@ final class Calendar {
 	 * @return array[]
 	 */
 	private function weeks( string $month ): array {
-		$day   = new \DateTimeImmutable( $month . '-01', new \DateTimeZone( 'UTC' ) );
+		$day   = self::date( $month . '-01' );
 		$blank = ( (int) $day->format( 'w' ) - $this->start_of_week + 7 ) % 7;
 		$cells = array_fill( 0, $blank, null );
 		while ( $day->format( 'Y-m' ) === $month ) {
 			$date    = $day->format( 'Y-m-d' );
 			$cells[] = array(
 				'date'  => $date,
+				'day'   => (int) $day->format( 'j' ),
 				'state' => $this->state( $date ),
 			);
 			$day     = $day->modify( '+1 day' );
@@ -206,12 +212,28 @@ final class Calendar {
 	 * window's end; the current month without a window.
 	 */
 	private function last_month(): string {
-		$first = substr( $this->today, 0, 7 );
+		$first = $this->first_month();
 		if ( null === $this->to ) {
 			return $first;
 		}
-		$last = ( new \DateTimeImmutable( $this->to, new \DateTimeZone( 'UTC' ) ) )->modify( '-1 day' )->format( 'Y-m' );
+		$last = self::date( $this->to )->modify( '-1 day' )->format( 'Y-m' );
 		return $last < $first ? $first : $last;
+	}
+
+	/**
+	 * The current month, YYYY-MM: where paging starts.
+	 */
+	private function first_month(): string {
+		return substr( $this->today, 0, 7 );
+	}
+
+	/**
+	 * A calendar date as a point in time, in UTC so no zone shifts it.
+	 *
+	 * @param string $date YYYY-MM-DD.
+	 */
+	public static function date( string $date ): \DateTimeImmutable {
+		return new \DateTimeImmutable( $date, new \DateTimeZone( 'UTC' ) );
 	}
 
 	/**
@@ -219,7 +241,7 @@ final class Calendar {
 	 * @param int    $months How many months to add; may be negative.
 	 */
 	private static function add_months( string $month, int $months ): string {
-		return ( new \DateTimeImmutable( $month . '-01', new \DateTimeZone( 'UTC' ) ) )->modify( sprintf( '%+d months', $months ) )->format( 'Y-m' );
+		return self::date( $month . '-01' )->modify( sprintf( '%+d months', $months ) )->format( 'Y-m' );
 	}
 
 	/**

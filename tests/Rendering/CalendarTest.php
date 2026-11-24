@@ -54,7 +54,7 @@ final class CalendarTest extends WP_UnitTestCase {
 	public function test_days_outside_the_window_are_unknown_never_free() {
 		$calendar = $this->calendar( array(), '2026-11-20' );
 
-		$this->assertSame( 'unknown', $calendar->state( '2026-11-22' ), 'Before data.from.' );
+		$this->assertSame( 'past', $calendar->state( '2026-11-22' ), 'Before data.from: the Tenant\'s today.' );
 		$this->assertSame( 'free', $calendar->state( '2026-11-23' ), 'data.from is inside.' );
 		$this->assertSame( 'free', $calendar->state( '2027-11-22' ) );
 		$this->assertSame( 'unknown', $calendar->state( '2027-11-23' ), 'data.to is outside: half-open.' );
@@ -64,6 +64,13 @@ final class CalendarTest extends WP_UnitTestCase {
 		$calendar = new Calendar( array( 'blocked' => array() ), array( 'from' => null, 'to' => null ), '2026-11-24' );
 
 		$this->assertSame( 'unknown', $calendar->state( '2026-12-01' ) );
+	}
+
+	public function test_a_site_still_on_yesterday_starts_at_the_windows_today() {
+		$calendar = $this->calendar( array(), '2026-11-22' ); // The window starts on 2026-11-23.
+
+		$this->assertSame( 'free', $calendar->state( '2026-11-23' ) );
+		$this->assertSame( 'past', $calendar->state( '2026-11-22' ), 'Not unknown.' );
 	}
 
 	public function test_a_range_under_way_at_the_window_start_is_clipped() {
@@ -128,7 +135,7 @@ final class CalendarTest extends WP_UnitTestCase {
 	public function test_paging_stops_at_the_window_end() {
 		$calendar = $this->calendar( array(), '2026-11-24' );
 
-		$this->assertSame( '2027-11', $calendar->page( '2028-05' ), 'The last month with a known day.' );
+		$this->assertSame( '2027-09', $calendar->page( '2028-05' ), 'The last full page, ending with the last month with a known day.' );
 		$this->assertSame( '2027-11', $calendar->next( '2027-08' ) );
 		$this->assertNull( $calendar->next( '2027-09' ), 'November 2027 is already shown.' );
 		$this->assertNull( $calendar->next( '2027-11' ) );

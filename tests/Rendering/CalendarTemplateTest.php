@@ -33,13 +33,7 @@ final class CalendarTemplateTest extends WP_UnitTestCase {
 		update_option( 'start_of_week', 1 );
 		$this->fake_hestahub();
 		$this->today = new \DateTimeImmutable( wp_date( 'Y-m-d' ), new \DateTimeZone( 'UTC' ) );
-		unset( $_GET['hestahub_month'] );
 		set_query_var( 'hestahub_month', '' );
-	}
-
-	public function tear_down() {
-		unset( $_GET['hestahub_month'] );
-		parent::tear_down();
 	}
 
 	public function test_it_renders_three_months_from_the_current_one() {
@@ -132,6 +126,15 @@ final class CalendarTemplateTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'hestahub_month=' . $this->month( 6 ), $xpath->evaluate( 'string(//a[@rel="next"]/@href)' ) );
 	}
 
+	public function test_a_malformed_or_early_page_shows_the_first() {
+		$this->respond( 200, $this->availability( array() ) );
+		set_query_var( 'hestahub_month', 'neulich' );
+		$this->assertSame( $this->month( 0 ), $this->render()->evaluate( 'string(//table[@class="hestahub-month"][1]/@data-hestahub-month)' ) );
+
+		set_query_var( 'hestahub_month', $this->month( -2 ) );
+		$this->assertSame( $this->month( 0 ), $this->render()->evaluate( 'string(//table[@class="hestahub-month"][1]/@data-hestahub-month)' ) );
+	}
+
 	public function test_paging_stops_at_the_window_end() {
 		$this->respond( 200, $this->availability( array(), 40 ) );
 
@@ -142,12 +145,16 @@ final class CalendarTemplateTest extends WP_UnitTestCase {
 
 	public function test_a_page_asked_past_the_window_shows_its_last_months() {
 		$this->respond( 200, $this->availability( array() ) );
-		$_GET['hestahub_month'] = $this->month( 30 );
+		set_query_var( 'hestahub_month', $this->month( 30 ) );
 
 		$xpath = $this->render();
 
-		$last = ( new \DateTimeImmutable( $this->day( 365 ), new \DateTimeZone( 'UTC' ) ) )->modify( '-1 day' )->format( 'Y-m' );
-		$this->assertSame( $last, $xpath->evaluate( 'string(//table[@class="hestahub-month"][1]/@data-hestahub-month)' ) );
+		$last = ( new \DateTimeImmutable( $this->day( 365 ), new \DateTimeZone( 'UTC' ) ) )->modify( '-1 day' );
+		$this->assertSame(
+			array( $last->modify( 'first day of -2 months' )->format( 'Y-m' ), $last->modify( 'first day of -1 month' )->format( 'Y-m' ), $last->format( 'Y-m' ) ),
+			$this->attributes( $xpath, '//table[@class="hestahub-month"]/@data-hestahub-month' ),
+			'The last full page.'
+		);
 		$this->assertSame( 0.0, $xpath->evaluate( 'count(//a[@rel="next"])' ) );
 	}
 
