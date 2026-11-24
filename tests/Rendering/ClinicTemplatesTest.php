@@ -201,12 +201,14 @@ final class ClinicTemplatesTest extends WP_UnitTestCase {
 		}
 	}
 
-	public function test_an_unknown_signup_value_shows_no_state_on_the_page() {
+	public function test_an_unknown_signup_value_shows_no_state_on_the_page_but_keeps_the_window() {
 		$this->respond( 200, $this->changed( array( 'signup' => 'lotterie' ) ) );
 
 		$xpath = $this->render( 'clinic', self::SLUG );
 
-		$this->assertSame( 0.0, $xpath->evaluate( 'count(//section[contains(@class,"hestahub-signup")])' ) );
+		$this->assertSame( 0.0, $xpath->evaluate( 'count(//section[contains(@class,"hestahub-signup")]/h2)' ) );
+		$this->assertStringNotContainsString( 'lotterie', $xpath->evaluate( 'string(//section/@class)' ) );
+		$this->assertSame( array( 'Signup closes 07.03.2027, 23:59' ), $this->texts( $xpath, '//p[@class="hestahub-signup-closes"]' ) );
 	}
 
 	public function test_the_page_fires_its_hook_with_the_clinic() {

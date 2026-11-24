@@ -14,15 +14,20 @@
 
 defined( 'ABSPATH' ) || exit;
 
+$hestahub_when       = hestahub_when( $clinic );
 $hestahub_signup     = hestahub_signup( $clinic );
 $hestahub_signup_url = hestahub_signup_url( $clinic );
+$hestahub_opens      = hestahub_date_time( $clinic['signup_opens_at'] ?? null );
+$hestahub_closes     = hestahub_date_time( $clinic['signup_closes_at'] ?? null );
 $hestahub_horses     = hestahub_horses( $clinic );
+$hestahub_fee        = hestahub_text( $clinic, 'fee' );
+$hestahub_loan_fee   = hestahub_text( $clinic, 'loan_horse_fee' );
 ?>
 <article class="hestahub hestahub-clinic">
 	<h1 class="hestahub-title"><?php echo esc_html( hestahub_text( $clinic, 'name' ) ); ?></h1>
 
-	<?php if ( '' !== hestahub_when( $clinic ) ) : ?>
-		<p class="hestahub-when"><?php echo esc_html( hestahub_when( $clinic ) ); ?></p>
+	<?php if ( '' !== $hestahub_when ) : ?>
+		<p class="hestahub-when"><?php echo esc_html( $hestahub_when ); ?></p>
 	<?php endif; ?>
 
 	<?php if ( '' !== hestahub_text( $clinic, 'photo_url' ) ) : ?>
@@ -42,19 +47,19 @@ $hestahub_horses     = hestahub_horses( $clinic );
 		<?php if ( isset( $clinic['apartment_guests_only'] ) && true === $clinic['apartment_guests_only'] ) : ?>
 			<li class="hestahub-fact-guests-only"><?php esc_html_e( 'Only guests staying in one of our apartments can sign up.', 'hestahub' ); ?></li>
 		<?php endif; ?>
-		<?php if ( '' !== hestahub_text( $clinic, 'fee' ) ) : ?>
+		<?php if ( '' !== $hestahub_fee ) : ?>
 			<li class="hestahub-fact-fee">
 				<?php
 				/* translators: %s: the fee per rider. */
-				echo esc_html( sprintf( __( '%s per rider', 'hestahub' ), hestahub_amount( $clinic['fee'] ) ) );
+				echo esc_html( sprintf( __( '%s per rider', 'hestahub' ), hestahub_amount( $hestahub_fee ) ) );
 				?>
 			</li>
 		<?php endif; ?>
-		<?php if ( '' !== hestahub_text( $clinic, 'loan_horse_fee' ) ) : ?>
+		<?php if ( '' !== $hestahub_loan_fee ) : ?>
 			<li class="hestahub-fact-loan-horse-fee">
 				<?php
 				/* translators: %s: the fee per loan horse. */
-				echo esc_html( sprintf( __( '%s per loan horse', 'hestahub' ), hestahub_amount( $clinic['loan_horse_fee'] ) ) );
+				echo esc_html( sprintf( __( '%s per loan horse', 'hestahub' ), hestahub_amount( $hestahub_loan_fee ) ) );
 				?>
 			</li>
 		<?php endif; ?>
@@ -67,31 +72,33 @@ $hestahub_horses     = hestahub_horses( $clinic );
 			</li>
 		<?php endif; ?>
 	</ul>
-	<?php if ( '' !== hestahub_tax_note() && ( '' !== hestahub_text( $clinic, 'fee' ) || '' !== hestahub_text( $clinic, 'loan_horse_fee' ) ) ) : ?>
+	<?php if ( '' !== hestahub_tax_note() && ( '' !== $hestahub_fee || '' !== $hestahub_loan_fee ) ) : ?>
 		<p class="hestahub-note"><?php echo esc_html( hestahub_tax_note() ); ?></p>
 	<?php endif; ?>
 
-	<?php if ( '' !== $hestahub_signup ) : ?>
-		<section class="hestahub-signup hestahub-signup--<?php echo esc_attr( $clinic['signup'] ); ?>">
-			<h2><?php echo esc_html( $hestahub_signup ); ?></h2>
-			<?php if ( '' !== hestahub_moment( $clinic['signup_opens_at'] ?? null ) ) : ?>
+	<?php if ( '' !== $hestahub_signup || '' !== $hestahub_opens || '' !== $hestahub_closes ) : ?>
+		<section class="hestahub-signup<?php echo '' === $hestahub_signup ? '' : ' hestahub-signup--' . esc_attr( $clinic['signup'] ); ?>">
+			<?php if ( '' !== $hestahub_signup ) : ?>
+				<h2><?php echo esc_html( $hestahub_signup ); ?></h2>
+			<?php endif; ?>
+			<?php if ( '' !== $hestahub_opens ) : ?>
 				<p class="hestahub-signup-opens">
 					<?php
 					/* translators: %s: date and time signups open. */
-					echo esc_html( sprintf( __( 'Signup opens %s', 'hestahub' ), hestahub_moment( $clinic['signup_opens_at'] ) ) );
+					echo esc_html( sprintf( __( 'Signup opens %s', 'hestahub' ), $hestahub_opens ) );
 					?>
 				</p>
 			<?php endif; ?>
-			<?php if ( '' !== hestahub_moment( $clinic['signup_closes_at'] ?? null ) ) : ?>
+			<?php if ( '' !== $hestahub_closes ) : ?>
 				<p class="hestahub-signup-closes">
 					<?php
 					/* translators: %s: date and time signups close. */
-					echo esc_html( sprintf( __( 'Signup closes %s', 'hestahub' ), hestahub_moment( $clinic['signup_closes_at'] ) ) );
+					echo esc_html( sprintf( __( 'Signup closes %s', 'hestahub' ), $hestahub_closes ) );
 					?>
 				</p>
 			<?php endif; ?>
 			<?php if ( null !== $hestahub_signup_url ) : ?>
-				<p><a class="hestahub-signup-link" href="<?php echo esc_url( $hestahub_signup_url ); ?>"><?php echo esc_html( 'waitlist' === $clinic['signup'] ? __( 'Join the waitlist', 'hestahub' ) : __( 'Sign up', 'hestahub' ) ); ?></a></p>
+				<p><a class="hestahub-signup-link" href="<?php echo esc_url( $hestahub_signup_url ); ?>"><?php echo esc_html( hestahub_signup_action( $clinic ) ); ?></a></p>
 			<?php endif; ?>
 		</section>
 	<?php endif; ?>

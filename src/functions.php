@@ -175,15 +175,15 @@ if ( ! function_exists( 'hestahub_when' ) ) {
 	}
 }
 
-if ( ! function_exists( 'hestahub_moment' ) ) {
+if ( ! function_exists( 'hestahub_date_time' ) ) {
 	/**
 	 * An instant (e.g. signup_closes_at) as date and time at the Tenant's
 	 * local time; empty when missing.
 	 *
 	 * @param mixed $instant An ISO 8601 instant as received.
 	 */
-	function hestahub_moment( $instant ): string {
-		return \HestaHub\Rendering\Format::moment( $instant );
+	function hestahub_date_time( $instant ): string {
+		return \HestaHub\Rendering\Format::date_time_of( $instant );
 	}
 }
 
@@ -195,6 +195,18 @@ if ( ! function_exists( 'hestahub_signup' ) ) {
 	 */
 	function hestahub_signup( array $clinic ): string {
 		return \HestaHub\Rendering\Format::signup( $clinic['signup'] ?? null );
+	}
+}
+
+if ( ! function_exists( 'hestahub_signup_action' ) ) {
+	/**
+	 * The words of a Clinic's call to action: "Sign up", "Join the
+	 * waitlist"; empty when its state takes no signups or is unknown.
+	 *
+	 * @param array $clinic A Clinic as received.
+	 */
+	function hestahub_signup_action( array $clinic ): string {
+		return \HestaHub\Rendering\Format::signup_action( $clinic['signup'] ?? null );
 	}
 }
 

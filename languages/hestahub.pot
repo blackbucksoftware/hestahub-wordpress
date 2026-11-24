@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:27+0100\n"
+"POT-Creation-Date: 2026-11-24 13:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -158,21 +158,6 @@ msgstr[1] ""
 msgid "%1$s–%2$s nights"
 msgstr ""
 
-msgid "Signup not yet open"
-msgstr ""
-
-msgid "Signup open"
-msgstr ""
-
-msgid "Waitlist only"
-msgstr ""
-
-msgid "Fully booked"
-msgstr ""
-
-msgid "Signup closed"
-msgstr ""
-
 msgid "Bring your own horse."
 msgstr ""
 
@@ -180,6 +165,27 @@ msgid "Bring your own horse or ride one of ours."
 msgstr ""
 
 msgid "No horses needed."
+msgstr ""
+
+msgid "Signup not yet open"
+msgstr ""
+
+msgid "Signup open"
+msgstr ""
+
+msgid "Sign up"
+msgstr ""
+
+msgid "Waitlist only"
+msgstr ""
+
+msgid "Join the waitlist"
+msgstr ""
+
+msgid "Fully booked"
+msgstr ""
+
+msgid "Signup closed"
 msgstr ""
 
 #. translators: 1: a date, 2: a time of day.
@@ -300,12 +306,6 @@ msgstr ""
 #. translators: %s: date and time signups close.
 #, php-format
 msgid "Signup closes %s"
-msgstr ""
-
-msgid "Join the waitlist"
-msgstr ""
-
-msgid "Sign up"
 msgstr ""
 
 msgid "There is nothing to show here at the moment. Please check back later."

@@ -23,6 +23,7 @@ defined( 'ABSPATH' ) || exit;
 			}
 			$hestahub_url    = '' !== hestahub_text( $hestahub_clinic, 'slug' ) ? hestahub_url( 'clinics', $hestahub_clinic['slug'] ) : null;
 			$hestahub_signup = hestahub_signup( $hestahub_clinic );
+			$hestahub_when   = hestahub_when( $hestahub_clinic );
 			?>
 			<li class="hestahub-card"
 				<?php if ( '' !== $hestahub_signup ) : ?>
@@ -39,8 +40,8 @@ defined( 'ABSPATH' ) || exit;
 						<?php echo esc_html( hestahub_text( $hestahub_clinic, 'name' ) ); ?>
 					<?php endif; ?>
 				</h2>
-				<?php if ( '' !== hestahub_when( $hestahub_clinic ) ) : ?>
-					<p class="hestahub-when"><?php echo esc_html( hestahub_when( $hestahub_clinic ) ); ?></p>
+				<?php if ( '' !== $hestahub_when ) : ?>
+					<p class="hestahub-when"><?php echo esc_html( $hestahub_when ); ?></p>
 				<?php endif; ?>
 				<?php if ( '' !== $hestahub_signup ) : ?>
 					<p class="hestahub-signup hestahub-signup--<?php echo esc_attr( $hestahub_clinic['signup'] ); ?>"><?php echo esc_html( $hestahub_signup ); ?></p>

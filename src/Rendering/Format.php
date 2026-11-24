@@ -194,7 +194,7 @@ final class Format {
 	 *
 	 * @param mixed $instant An ISO 8601 instant as received.
 	 */
-	public static function moment( $instant ): string {
+	public static function date_time_of( $instant ): string {
 		$time = self::instant( $instant );
 		return null === $time ? '' : self::date_time( $time );
 	}
@@ -206,19 +206,19 @@ final class Format {
 	 * @param mixed $signup signup as received.
 	 */
 	public static function signup( $signup ): string {
-		switch ( $signup ) {
-			case 'not_yet_open':
-				return __( 'Signup not yet open', 'hestahub' );
-			case 'open':
-				return __( 'Signup open', 'hestahub' );
-			case 'waitlist':
-				return __( 'Waitlist only', 'hestahub' );
-			case 'full':
-				return __( 'Fully booked', 'hestahub' );
-			case 'closed':
-				return __( 'Signup closed', 'hestahub' );
-		}
-		return '';
+		$states = self::signup_states();
+		return is_string( $signup ) && isset( $states[ $signup ] ) ? $states[ $signup ][0] : '';
+	}
+
+	/**
+	 * The words of a Clinic's call to action ("Sign up", "Join the
+	 * waitlist"); empty when its state takes no signups or is unknown.
+	 *
+	 * @param mixed $signup signup as received.
+	 */
+	public static function signup_action( $signup ): string {
+		$states = self::signup_states();
+		return is_string( $signup ) && isset( $states[ $signup ] ) ? $states[ $signup ][1] : '';
 	}
 
 	/**
@@ -241,15 +241,31 @@ final class Format {
 
 	/**
 	 * Where to sign up for a Clinic: its portal_url, exactly as received,
-	 * while signup is open or waitlist; null otherwise, and for any value
-	 * the plugin does not know.
+	 * while its state takes signups (open, waitlist); null otherwise, and
+	 * for any value the plugin does not know.
 	 *
 	 * @param array $clinic A Clinic as received.
 	 */
 	public static function signup_url( array $clinic ): ?string {
-		$url = isset( $clinic['portal_url'] ) && is_string( $clinic['portal_url'] ) && '' !== $clinic['portal_url'] ? $clinic['portal_url'] : null;
-		$open = isset( $clinic['signup'] ) && in_array( $clinic['signup'], array( 'open', 'waitlist' ), true );
-		return $open ? $url : null;
+		$url = isset( $clinic['portal_url'] ) && is_string( $clinic['portal_url'] ) ? $clinic['portal_url'] : '';
+		return '' !== $url && '' !== self::signup_action( $clinic['signup'] ?? null ) ? $url : null;
+	}
+
+	/**
+	 * The signup states the plugin knows: each state's words and, for a
+	 * state that takes signups, the words of its call to action (else
+	 * empty). A state not listed shows nothing and offers no call to action.
+	 *
+	 * @return array<string, string[]>
+	 */
+	private static function signup_states(): array {
+		return array(
+			'not_yet_open' => array( __( 'Signup not yet open', 'hestahub' ), '' ),
+			'open'         => array( __( 'Signup open', 'hestahub' ), __( 'Sign up', 'hestahub' ) ),
+			'waitlist'     => array( __( 'Waitlist only', 'hestahub' ), __( 'Join the waitlist', 'hestahub' ) ),
+			'full'         => array( __( 'Fully booked', 'hestahub' ), '' ),
+			'closed'       => array( __( 'Signup closed', 'hestahub' ), '' ),
+		);
 	}
 
 	/**
