@@ -134,6 +134,22 @@ final class RulesTest extends WP_UnitTestCase {
 		$this->assertEmpty( get_option( 'rewrite_rules' ) );
 	}
 
+	public function test_network_deactivation_drops_the_rules_on_every_site() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Multisite only.' );
+		}
+		$site = self::factory()->blog->create();
+		switch_to_blog( $site );
+		update_option( 'rewrite_rules', array( '^wohnungen/?$' => 'x' ) );
+		restore_current_blog();
+
+		Routes::deactivate( true );
+
+		switch_to_blog( $site );
+		$this->assertEmpty( get_option( 'rewrite_rules' ) );
+		restore_current_blog();
+	}
+
 	/**
 	 * Runs init and wp_loaded as a fresh request would, and returns the
 	 * stored rewrite rules.

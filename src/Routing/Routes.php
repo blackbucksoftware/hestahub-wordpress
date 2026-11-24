@@ -80,9 +80,23 @@ final class Routes implements Feature {
 	/**
 	 * Drops the stored rules, so WordPress rebuilds them without ours. On
 	 * deactivation: a flush now would still include the rules this request
-	 * registered.
+	 * registered. A network deactivation does it on every site.
+	 *
+	 * @param bool $network_wide Whether the plugin is deactivated network-wide.
 	 */
-	public static function deactivate(): void {
+	public static function deactivate( $network_wide = false ): void {
+		if ( ! $network_wide || ! is_multisite() ) {
+			self::drop_rules();
+			return;
+		}
+		foreach ( get_sites( array( 'fields' => 'ids', 'number' => 0 ) ) as $site ) {
+			switch_to_blog( $site );
+			self::drop_rules();
+			restore_current_blog();
+		}
+	}
+
+	private static function drop_rules(): void {
 		delete_option( 'rewrite_rules' );
 		delete_option( self::SIGNATURE );
 	}
@@ -129,7 +143,7 @@ final class Routes implements Feature {
 	 * @param \WP_Query $query The query.
 	 */
 	public function parse_query( $query ): void {
-		if ( $query->is_main_query() && $this->owned( $query ) ) {
+		if ( $query->is_main_query() && $this->is_owned_route( $query ) ) {
 			$query->is_home = false;
 		}
 	}
@@ -141,7 +155,7 @@ final class Routes implements Feature {
 	 * @param \WP_Query  $query The query.
 	 */
 	public function posts_pre_query( $posts, $query ) {
-		return $query->is_main_query() && $this->owned( $query ) ? array() : $posts;
+		return $query->is_main_query() && $this->is_owned_route( $query ) ? array() : $posts;
 	}
 
 	/**
@@ -152,7 +166,7 @@ final class Routes implements Feature {
 	 * @param \WP_Query $wp_query The main query.
 	 */
 	public function pre_handle_404( $preempt, $wp_query ) {
-		if ( ! $this->owned( $wp_query ) ) {
+		if ( ! $this->is_owned_route( $wp_query ) ) {
 			return $preempt;
 		}
 		$resolved = $this->resolve( $wp_query );
@@ -173,7 +187,7 @@ final class Routes implements Feature {
 	 */
 	public function template_include( $template ) {
 		global $wp_query;
-		if ( ! $this->owned( $wp_query ) || is_404() ) {
+		if ( ! $this->is_owned_route( $wp_query ) || is_404() ) {
 			return $template;
 		}
 		$resolved = $this->resolve( $wp_query );
@@ -209,7 +223,7 @@ final class Routes implements Feature {
 	 *
 	 * @param \WP_Query|null $query The query.
 	 */
-	private function owned( $query ): bool {
+	private function is_owned_route( $query ): bool {
 		return $query instanceof \WP_Query && array_key_exists( (string) $query->get( self::QV_RESOURCE ), $this->bases() );
 	}
 
@@ -226,27 +240,27 @@ final class Routes implements Feature {
 		}
 		$resource = (string) $query->get( self::QV_RESOURCE );
 		$slug     = (string) $query->get( self::QV_SLUG );
-		if ( '' === $slug ) {
-			$this->resolved = array(
-				'resource' => $resource,
-				'slug'     => null,
-				'found'    => true,
-			);
-			return $this->resolved;
-		}
-		$result = $this->client->get( $resource );
-		$found  = false;
-		foreach ( $result->is_ok() ? $result->data() : array() as $item ) {
-			if ( is_array( $item ) && isset( $item['slug'] ) && $item['slug'] === $slug ) {
-				$found = true;
-				break;
-			}
-		}
 		$this->resolved = array(
 			'resource' => $resource,
-			'slug'     => $slug,
-			'found'    => $found,
+			'slug'     => '' === $slug ? null : $slug,
+			'found'    => '' === $slug || $this->in_current_data( $resource, $slug ),
 		);
 		return $this->resolved;
+	}
+
+	/**
+	 * Whether the current data of a resource has an item with this slug.
+	 *
+	 * @param string $resource apartments or clinics.
+	 * @param string $slug     The slug.
+	 */
+	private function in_current_data( string $resource, string $slug ): bool {
+		$result = $this->client->get( $resource );
+		foreach ( $result->is_ok() ? $result->data() : array() as $item ) {
+			if ( is_array( $item ) && isset( $item['slug'] ) && $item['slug'] === $slug ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

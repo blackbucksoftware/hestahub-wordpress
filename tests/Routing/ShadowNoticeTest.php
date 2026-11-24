@@ -63,6 +63,22 @@ final class ShadowNoticeTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_a_draft_child_is_not_listed() {
+		self::factory()->post->create(
+			array(
+				'post_type'   => 'page',
+				'post_name'   => 'entwurf',
+				'post_title'  => 'Entwurf',
+				'post_status' => 'draft',
+				'post_parent' => $this->pages['base'],
+			)
+		);
+
+		update_option( 'hestahub_apartments_base', 'wohnungen' );
+
+		$this->assertStringNotContainsString( 'Entwurf', $this->notices() );
+	}
+
 	public function test_a_nested_base_path_finds_its_page() {
 		$parent = $this->page( 'urlaub', 0, 'Urlaub' );
 		$this->page( 'ferien', $parent, 'Ferien hier' );

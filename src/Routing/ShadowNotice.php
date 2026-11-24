@@ -25,22 +25,11 @@ final class ShadowNotice implements Feature {
 
 	public function register( Plugin $plugin ): void {
 		foreach ( Settings::BASES as $resource => $option ) {
-			add_action(
-				'add_option_' . $option,
-				function ( $name, $value ) use ( $resource ) {
-					$this->taken( $resource, $value );
-				},
-				10,
-				2
-			);
-			add_action(
-				'update_option_' . $option,
-				function ( $old, $value ) use ( $resource ) {
-					$this->taken( $resource, $value );
-				},
-				10,
-				2
-			);
+			$record = function () use ( $resource, $option ) {
+				$this->record_shadowed( $resource, get_option( $option, '' ) );
+			};
+			add_action( 'add_option_' . $option, $record );
+			add_action( 'update_option_' . $option, $record );
 		}
 		add_action( 'admin_notices', array( $this, 'render' ) );
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'dismiss' ) );
@@ -53,7 +42,7 @@ final class ShadowNotice implements Feature {
 	 * @param string $resource apartments or clinics.
 	 * @param mixed  $base     The saved base path.
 	 */
-	private function taken( string $resource, $base ): void {
+	private function record_shadowed( string $resource, $base ): void {
 		delete_option( self::OPTION_PREFIX . $resource );
 		if ( ! is_string( $base ) || '' === $base ) {
 			return;
@@ -157,7 +146,7 @@ final class ShadowNotice implements Feature {
 				array(
 					'post_type'   => 'page',
 					'post_parent' => $parent,
-					'post_status' => array( 'publish', 'private', 'future', 'draft', 'pending' ),
+					'post_status' => array( 'publish', 'private' ), // What has a URL to lose.
 					'numberposts' => -1,
 					'orderby'     => array(
 						'menu_order' => 'ASC',

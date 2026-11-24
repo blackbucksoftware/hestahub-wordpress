@@ -98,6 +98,18 @@ final class RequestTest extends WP_UnitTestCase {
 		$this->assertSame( 404, $this->status );
 	}
 
+	public function test_a_page_two_levels_under_the_base_stays_reachable() {
+		// The contract: grandchildren survive, orphaned under a base that no longer resolves.
+		$base  = self::factory()->post->create( array( 'post_type' => 'page', 'post_name' => 'wohnungen' ) );
+		$child = self::factory()->post->create( array( 'post_type' => 'page', 'post_name' => 'alt', 'post_parent' => $base ) );
+		$grand = self::factory()->post->create( array( 'post_type' => 'page', 'post_name' => 'galerie', 'post_parent' => $child ) );
+
+		$this->go_to( home_url( '/wohnungen/alt/galerie/' ) );
+
+		$this->assertSame( $grand, get_queried_object_id() );
+		$this->assertCount( 0, $this->requests );
+	}
+
 	public function test_a_base_path_not_set_is_not_owned() {
 		$this->go_to( home_url( '/kurse/' ) );
 
