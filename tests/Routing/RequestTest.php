@@ -108,6 +108,33 @@ final class RequestTest extends WP_UnitTestCase {
 		$this->assertSame( 404, $this->status );
 	}
 
+	public function test_a_finished_clinic_answers_404_and_raises_nothing() {
+		update_option( 'hestahub_clinics_base', 'kurse' );
+		$this->routes->add_rules();
+		flush_rewrite_rules( false );
+		$client = new Client( new Credentials() );
+		$this->respond( 200, $this->example( 'clinics' ) );
+		$client->get( 'clinics' );
+		$client->flush();
+		$this->respond(
+			200,
+			$this->example(
+				'clinics',
+				function ( $body ) {
+					$body['data'] = array(); // It finished, and left the list.
+					return $body;
+				}
+			)
+		);
+		$before = $this->hestahub_options();
+
+		$this->go_to( home_url( '/kurse/dressurkurs-2027-03-14/' ) );
+
+		$this->assertTrue( is_404() );
+		$this->assertSame( 404, $this->status );
+		$this->assertSame( array(), array_values( preg_grep( '/^hestahub_(?!cache_|api_state_)/', array_diff( $this->hestahub_options(), $before ) ) ), 'Nothing raised.' );
+	}
+
 	public function test_a_page_two_levels_under_the_base_stays_reachable() {
 		// The contract: grandchildren survive, orphaned under a base that no longer resolves.
 		$base  = self::factory()->post->create( array( 'post_type' => 'page', 'post_name' => 'wohnungen' ) );
@@ -143,5 +170,15 @@ final class RequestTest extends WP_UnitTestCase {
 		ob_start();
 		$this->routes->render_content();
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * The names of the options the plugin stores.
+	 *
+	 * @return string[]
+	 */
+	private function hestahub_options(): array {
+		global $wpdb;
+		return $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'hestahub\\_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	}
 }

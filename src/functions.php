@@ -163,6 +163,76 @@ if ( ! function_exists( 'hestahub_facts' ) ) {
 	}
 }
 
+if ( ! function_exists( 'hestahub_when' ) ) {
+	/**
+	 * When a Clinic runs, at the Tenant's local time: "14.03.2027,
+	 * 14:00 – 16.03.2027, 16:00", or only the start when ends_at is null.
+	 *
+	 * @param array $clinic A Clinic as received.
+	 */
+	function hestahub_when( array $clinic ): string {
+		return \HestaHub\Rendering\Format::when( $clinic['starts_at'] ?? null, $clinic['ends_at'] ?? null );
+	}
+}
+
+if ( ! function_exists( 'hestahub_date_time' ) ) {
+	/**
+	 * An instant (e.g. signup_closes_at) as date and time at the Tenant's
+	 * local time; empty when missing.
+	 *
+	 * @param mixed $instant An ISO 8601 instant as received.
+	 */
+	function hestahub_date_time( $instant ): string {
+		return \HestaHub\Rendering\Format::date_time_of( $instant );
+	}
+}
+
+if ( ! function_exists( 'hestahub_signup' ) ) {
+	/**
+	 * A Clinic's signup state in words; empty for an unknown value.
+	 *
+	 * @param array $clinic A Clinic as received.
+	 */
+	function hestahub_signup( array $clinic ): string {
+		return \HestaHub\Rendering\Format::signup( $clinic['signup'] ?? null );
+	}
+}
+
+if ( ! function_exists( 'hestahub_signup_action' ) ) {
+	/**
+	 * The words of a Clinic's call to action: "Sign up", "Join the
+	 * waitlist"; empty when its state takes no signups or is unknown.
+	 *
+	 * @param array $clinic A Clinic as received.
+	 */
+	function hestahub_signup_action( array $clinic ): string {
+		return \HestaHub\Rendering\Format::signup_action( $clinic['signup'] ?? null );
+	}
+}
+
+if ( ! function_exists( 'hestahub_signup_url' ) ) {
+	/**
+	 * Where to sign up for a Clinic, while signup is open or waitlist and
+	 * portal_url is set; null otherwise.
+	 *
+	 * @param array $clinic A Clinic as received.
+	 */
+	function hestahub_signup_url( array $clinic ): ?string {
+		return \HestaHub\Rendering\Format::signup_url( $clinic );
+	}
+}
+
+if ( ! function_exists( 'hestahub_horses' ) ) {
+	/**
+	 * What a Clinic says about horses; empty for an unknown value.
+	 *
+	 * @param array $clinic A Clinic as received.
+	 */
+	function hestahub_horses( array $clinic ): string {
+		return \HestaHub\Rendering\Format::horses( $clinic['horses'] ?? null );
+	}
+}
+
 if ( ! function_exists( 'hestahub_list' ) ) {
 	/**
 	 * The members of a list field that are objects, e.g. an Apartment's

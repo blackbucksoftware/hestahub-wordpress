@@ -164,6 +164,143 @@ final class Format {
 	}
 
 	/**
+	 * When a Clinic runs, at the offset received (the Tenant's local time),
+	 * in the site's formats: "14.03.2027, 14:00–16:00" on one day,
+	 * "14.03.2027, 14:00 – 16.03.2027, 16:00" across days, and only the start
+	 * when ends_at is null. Empty when starts_at is unreadable.
+	 *
+	 * @param mixed $starts starts_at as received.
+	 * @param mixed $ends   ends_at as received.
+	 */
+	public static function when( $starts, $ends ): string {
+		$start = self::instant( $starts );
+		if ( null === $start ) {
+			return '';
+		}
+		$end  = self::instant( $ends );
+		$from = self::date_time( $start );
+		if ( null === $end ) {
+			return $from;
+		}
+		if ( $end->format( 'Y-m-d' ) === $start->format( 'Y-m-d' ) ) {
+			return $from . '–' . self::local( $end, (string) get_option( 'time_format' ) );
+		}
+		return $from . ' – ' . self::date_time( $end );
+	}
+
+	/**
+	 * An instant as date and time at the offset received; empty when
+	 * unreadable.
+	 *
+	 * @param mixed $instant An ISO 8601 instant as received.
+	 */
+	public static function date_time_of( $instant ): string {
+		$time = self::instant( $instant );
+		return null === $time ? '' : self::date_time( $time );
+	}
+
+	/**
+	 * A Clinic's signup state in words; empty for a value the plugin does
+	 * not know, which shows no state.
+	 *
+	 * @param mixed $signup signup as received.
+	 */
+	public static function signup( $signup ): string {
+		$states = self::signup_states();
+		return is_string( $signup ) && isset( $states[ $signup ] ) ? $states[ $signup ][0] : '';
+	}
+
+	/**
+	 * The words of a Clinic's call to action ("Sign up", "Join the
+	 * waitlist"); empty when its state takes no signups or is unknown.
+	 *
+	 * @param mixed $signup signup as received.
+	 */
+	public static function signup_action( $signup ): string {
+		$states = self::signup_states();
+		return is_string( $signup ) && isset( $states[ $signup ] ) ? $states[ $signup ][1] : '';
+	}
+
+	/**
+	 * What a Clinic says about horses; empty for a value the plugin does
+	 * not know, about which it says nothing.
+	 *
+	 * @param mixed $horses horses as received.
+	 */
+	public static function horses( $horses ): string {
+		switch ( $horses ) {
+			case 'own_only':
+				return __( 'Bring your own horse.', 'hestahub' );
+			case 'own_or_loan':
+				return __( 'Bring your own horse or ride one of ours.', 'hestahub' );
+			case 'none':
+				return __( 'No horses needed.', 'hestahub' );
+		}
+		return '';
+	}
+
+	/**
+	 * Where to sign up for a Clinic: its portal_url, exactly as received,
+	 * while its state takes signups (open, waitlist); null otherwise, and
+	 * for any value the plugin does not know.
+	 *
+	 * @param array $clinic A Clinic as received.
+	 */
+	public static function signup_url( array $clinic ): ?string {
+		$url = isset( $clinic['portal_url'] ) && is_string( $clinic['portal_url'] ) ? $clinic['portal_url'] : '';
+		return '' !== $url && '' !== self::signup_action( $clinic['signup'] ?? null ) ? $url : null;
+	}
+
+	/**
+	 * The signup states the plugin knows: each state's words and, for a
+	 * state that takes signups, the words of its call to action (else
+	 * empty). A state not listed shows nothing and offers no call to action.
+	 *
+	 * @return array<string, string[]>
+	 */
+	private static function signup_states(): array {
+		return array(
+			'not_yet_open' => array( __( 'Signup not yet open', 'hestahub' ), '' ),
+			'open'         => array( __( 'Signup open', 'hestahub' ), __( 'Sign up', 'hestahub' ) ),
+			'waitlist'     => array( __( 'Waitlist only', 'hestahub' ), __( 'Join the waitlist', 'hestahub' ) ),
+			'full'         => array( __( 'Fully booked', 'hestahub' ), '' ),
+			'closed'       => array( __( 'Signup closed', 'hestahub' ), '' ),
+		);
+	}
+
+	/**
+	 * @param mixed $value An ISO 8601 instant with an offset, as received.
+	 */
+	private static function instant( $value ): ?\DateTimeImmutable {
+		if ( ! is_string( $value ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/', $value ) ) {
+			return null;
+		}
+		try {
+			return new \DateTimeImmutable( $value );
+		} catch ( \Exception $e ) {
+			return null;
+		}
+	}
+
+	/**
+	 * @param \DateTimeImmutable $time An instant, at its own offset.
+	 */
+	private static function date_time( \DateTimeImmutable $time ): string {
+		/* translators: 1: a date, 2: a time of day. */
+		return sprintf( __( '%1$s, %2$s', 'hestahub' ), self::local( $time, (string) get_option( 'date_format' ) ), self::local( $time, (string) get_option( 'time_format' ) ) );
+	}
+
+	/**
+	 * An instant in a format, at its own offset, in the site's language.
+	 *
+	 * @param \DateTimeImmutable $time   An instant.
+	 * @param string             $format A date format.
+	 */
+	private static function local( \DateTimeImmutable $time, string $format ): string {
+		return (string) wp_date( $format, $time->getTimestamp(), $time->getTimezone() );
+	}
+
+	/**
 	 * The members of a list field that are objects.
 	 *
 	 * @param mixed  $object An object as received, or anything else.

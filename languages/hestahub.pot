@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:20+0100\n"
+"POT-Creation-Date: 2026-11-24 13:30+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -158,6 +158,41 @@ msgstr[1] ""
 msgid "%1$s–%2$s nights"
 msgstr ""
 
+msgid "Bring your own horse."
+msgstr ""
+
+msgid "Bring your own horse or ride one of ours."
+msgstr ""
+
+msgid "No horses needed."
+msgstr ""
+
+msgid "Signup not yet open"
+msgstr ""
+
+msgid "Signup open"
+msgstr ""
+
+msgid "Sign up"
+msgstr ""
+
+msgid "Waitlist only"
+msgstr ""
+
+msgid "Join the waitlist"
+msgstr ""
+
+msgid "Fully booked"
+msgstr ""
+
+msgid "Signup closed"
+msgstr ""
+
+#. translators: 1: a date, 2: a time of day.
+#, php-format
+msgid "%1$s, %2$s"
+msgstr ""
+
 #. translators: 1: Apartments or Clinics, 2: the base path, e.g. /apartments/.
 #, php-format
 msgid "The %1$s base path %2$s now shadows content on this site."
@@ -241,6 +276,36 @@ msgid "Earlier months"
 msgstr ""
 
 msgid "Later months"
+msgstr ""
+
+msgid "Only guests staying in one of our apartments can sign up."
+msgstr ""
+
+#. translators: %s: the fee per rider.
+#, php-format
+msgid "%s per rider"
+msgstr ""
+
+#. translators: %s: the fee per loan horse.
+#, php-format
+msgid "%s per loan horse"
+msgstr ""
+
+#. translators: %s: the minimum number of participants.
+#, php-format
+msgid "Minimum %s participant"
+msgid_plural "Minimum %s participants"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: date and time signups open.
+#, php-format
+msgid "Signup opens %s"
+msgstr ""
+
+#. translators: %s: date and time signups close.
+#, php-format
+msgid "Signup closes %s"
 msgstr ""
 
 msgid "There is nothing to show here at the moment. Please check back later."
