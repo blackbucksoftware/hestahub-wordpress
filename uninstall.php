@@ -48,8 +48,9 @@ function hestahub_uninstall_names( $table, $column ) {
  * Removes the plugin's WP-Cron events from the current site.
  */
 function hestahub_uninstall_cron() {
-	// By hook name: src/Api/MetaCheck.php is not loaded here.
-	wp_clear_scheduled_hook( 'hestahub_check_meta' );
+	// By hook name: src/ is not loaded here.
+	wp_clear_scheduled_hook( 'hestahub_check_meta' ); // MetaCheck::HOOK.
+	wp_clear_scheduled_hook( 'hestahub_escalate' ); // Escalation::HOOK.
 }
 
 if ( is_multisite() ) {

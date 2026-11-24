@@ -182,7 +182,7 @@ final class ClientTest extends WP_UnitTestCase {
 			$this->now += 6 * HOUR_IN_SECONDS;
 			$result = $this->client()->get( 'apartments' );
 		} finally {
-			wp_using_ext_object_cache( $was_external );
+			wp_using_ext_object_cache( (bool) $was_external ); // It may start as null, which would change nothing.
 		}
 
 		$this->assertTrue( $result->is_ok(), 'The contract: keep a body until stale_ttl.' );

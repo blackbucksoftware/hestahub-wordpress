@@ -52,10 +52,13 @@ hestahub()
 	->add( new \HestaHub\Admin\Settings( $hestahub_client, $hestahub_credentials ) )
 	->add( $hestahub_renderer )
 	->add( new \HestaHub\Routing\Routes( $hestahub_client, $hestahub_renderer, __DIR__ ) )
-	->add( new \HestaHub\Routing\ShadowNotice() );
+	->add( new \HestaHub\Routing\ShadowNotice() )
+	->add( new \HestaHub\Health\Escalation( $hestahub_client, $hestahub_credentials ) )
+	->add( new \HestaHub\Health\Notices( $hestahub_client ) );
 
 register_activation_hook( __FILE__, array( \HestaHub\Routing\Routes::class, 'activate' ) );
 register_deactivation_hook( __FILE__, array( \HestaHub\Routing\Routes::class, 'deactivate' ) );
 register_deactivation_hook( __FILE__, array( \HestaHub\Api\MetaCheck::class, 'unschedule' ) );
+register_deactivation_hook( __FILE__, array( \HestaHub\Health\Escalation::class, 'unschedule' ) );
 
 hestahub()->hook();

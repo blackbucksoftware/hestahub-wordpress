@@ -9,6 +9,7 @@ use HestaHub\Api\Client;
 use HestaHub\Api\Credentials;
 use HestaHub\Api\Result;
 use HestaHub\Feature;
+use HestaHub\Health\Probe;
 use HestaHub\Plugin;
 
 /**
@@ -46,9 +47,21 @@ final class Settings implements Feature {
 	/** @var Result|null What "test connection" found on this request. */
 	private $tested = null;
 
-	public function __construct( Client $client, Credentials $credentials ) {
+	/** @var Probe */
+	private $probe;
+
+	/** @var array|null What the 503 probe found on this request. */
+	private $probed = null;
+
+	/**
+	 * @param Client      $client      The API client.
+	 * @param Credentials $credentials Where the Tenant and key come from.
+	 * @param Probe|null  $probe       The 503 probe "test connection" runs.
+	 */
+	public function __construct( Client $client, Credentials $credentials, ?Probe $probe = null ) {
 		$this->client      = $client;
 		$this->credentials = $credentials;
+		$this->probe       = $probe ? $probe : new Probe();
 	}
 
 	public function register( Plugin $plugin ): void {
@@ -211,6 +224,7 @@ final class Settings implements Feature {
 			return;
 		}
 		$this->tested = $this->client->fetch_live( 'meta' );
+		$this->probed = $this->probe->run();
 	}
 
 	/**
@@ -253,6 +267,7 @@ final class Settings implements Feature {
 
 			<h2><?php esc_html_e( 'Maintenance', 'hestahub' ); ?></h2>
 			<?php $this->render_outcome(); ?>
+			<?php $this->render_probe(); ?>
 			<p><?php esc_html_e( '“Refresh now” discards the copies this site keeps, including the one that may be keeping the site up while HestaHub cannot be reached. “Test connection” asks HestaHub directly and changes nothing.', 'hestahub' ); ?></p>
 			<form method="post" style="display:inline">
 				<?php wp_nonce_field( 'hestahub_test' ); ?>
@@ -375,6 +390,35 @@ final class Settings implements Feature {
 			echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>' . esc_html( '' === $value ? '—' : $value ) . '</td></tr>';
 		}
 		echo '</tbody></table><p></p></div>';
+	}
+
+	/**
+	 * What the 503 probe found.
+	 */
+	private function render_probe(): void {
+		if ( null === $this->probed ) {
+			return;
+		}
+		switch ( $this->probed['result'] ) {
+			case Probe::OK:
+				$class = 'notice-success';
+				$text  = __( 'Outage check: the host passes the plugin’s 503 through unchanged, so page caches will not store an outage.', 'hestahub' );
+				break;
+			case Probe::REWRITTEN:
+				$class = 'notice-warning';
+				/* translators: %d: the HTTP status that came back. */
+				$text = sprintf( __( 'Outage check: the host or a cache changed the plugin’s 503 (it came back with HTTP status %d, or without the plugin’s page). During an outage visitors may see a cached or error page instead. Ask your host to pass 503 responses through.', 'hestahub' ), $this->probed['status'] );
+				break;
+			case Probe::UNREACHABLE:
+				$class = 'notice-warning';
+				/* translators: %s: why the request failed. */
+				$text = sprintf( __( 'Outage check: this site could not request its own page: %s', 'hestahub' ), $this->probed['message'] );
+				break;
+			default:
+				$class = 'notice-info';
+				$text  = __( 'Outage check: set a base path first. The check needs one of the plugin’s pages.', 'hestahub' );
+		}
+		echo '<div class="notice ' . esc_attr( $class ) . ' inline hestahub-probe"><p>' . esc_html( $text ) . '</p></div>';
 	}
 
 	/**
