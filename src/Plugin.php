@@ -37,6 +37,20 @@ final class Plugin {
 	}
 
 	/**
+	 * The added feature of this class, or null.
+	 *
+	 * @param string $class A class name.
+	 */
+	public function get( string $class ): ?Feature {
+		foreach ( $this->features as $feature ) {
+			if ( $feature instanceof $class ) {
+				return $feature;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Hooks the plugin into WordPress.
 	 */
 	public function hook(): void {

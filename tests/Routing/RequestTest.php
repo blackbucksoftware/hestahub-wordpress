@@ -7,6 +7,7 @@ namespace HestaHub\Tests\Routing;
 
 use HestaHub\Api\Client;
 use HestaHub\Api\Credentials;
+use HestaHub\Rendering\Renderer;
 use HestaHub\Routing\Routes;
 use HestaHub\Tests\Support\FakeHestaHub;
 use WP_UnitTestCase;
@@ -20,6 +21,9 @@ final class RequestTest extends WP_UnitTestCase {
 
 	/** @var int|null The last status sent. */
 	private $status;
+
+	/** @var Routes */
+	private $routes;
 
 	public function set_up() {
 		parent::set_up();
@@ -41,13 +45,14 @@ final class RequestTest extends WP_UnitTestCase {
 
 		global $wp_rewrite;
 		$wp_rewrite->extra_rules_top = array();
-		$routes                      = new Routes( new Client( new Credentials() ), dirname( __DIR__, 2 ) );
-		$routes->register( hestahub() );
-		$routes->add_rules();
-		$routes->flush_if_changed();
+		$client       = new Client( new Credentials() );
+		$this->routes = new Routes( $client, new Renderer( $client, dirname( __DIR__, 2 ) ), dirname( __DIR__, 2 ) );
+		$this->routes->register( hestahub() );
+		$this->routes->add_rules();
+		$this->routes->flush_if_changed();
 	}
 
-	public function test_the_listing_answers_200_with_the_listing_template() {
+	public function test_the_listing_answers_200_inside_the_page_shell() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 
 		$this->go_to( home_url( '/wohnungen/' ) );
@@ -55,17 +60,19 @@ final class RequestTest extends WP_UnitTestCase {
 		$this->assertFalse( is_404() );
 		$this->assertFalse( is_home(), 'Not the blog.' );
 		$this->assertSame( 200, $this->status );
-		$this->assertStringEndsWith( '/templates/apartment-listing.php', apply_filters( 'template_include', 'index.php' ) );
+		$this->assertStringEndsWith( '/templates/shell.php', apply_filters( 'template_include', 'index.php' ) );
+		$this->assertStringContainsString( 'hestahub-apartment-listing', $this->content() );
 	}
 
-	public function test_a_slug_in_the_current_data_answers_200_with_the_single_template() {
+	public function test_a_slug_in_the_current_data_answers_200_with_the_apartment_template() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 
 		$this->go_to( home_url( '/wohnungen/hoettur/' ) );
 
 		$this->assertFalse( is_404() );
 		$this->assertSame( 200, $this->status );
-		$this->assertStringEndsWith( '/templates/apartment.php', apply_filters( 'template_include', 'index.php' ) );
+		$this->assertStringEndsWith( '/templates/shell.php', apply_filters( 'template_include', 'index.php' ) );
+		$this->assertStringContainsString( 'hestahub-apartment"', $this->content() );
 	}
 
 	public function test_a_slug_never_resolved_answers_404() {
@@ -126,5 +133,14 @@ final class RequestTest extends WP_UnitTestCase {
 
 		$this->assertFalse( is_404(), 'Routes come from configuration, never from data.' );
 		$this->assertSame( 'apartments', get_query_var( 'hestahub_resource' ) );
+	}
+
+	/**
+	 * What the page shell prints between the theme's header and footer.
+	 */
+	private function content(): string {
+		ob_start();
+		$this->routes->render_content();
+		return (string) ob_get_clean();
 	}
 }

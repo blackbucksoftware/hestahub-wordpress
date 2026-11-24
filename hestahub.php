@@ -30,6 +30,7 @@ if ( ! file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 }
 
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/src/functions.php';
 
 /**
  * The plugin instance.
@@ -44,11 +45,13 @@ function hestahub(): \HestaHub\Plugin {
 
 $hestahub_credentials = new \HestaHub\Api\Credentials();
 $hestahub_client      = new \HestaHub\Api\Client( $hestahub_credentials );
+$hestahub_renderer    = new \HestaHub\Rendering\Renderer( $hestahub_client, __DIR__ );
 hestahub()
 	->add( new \HestaHub\I18n( plugin_basename( __FILE__ ) ) )
 	->add( new \HestaHub\Api\MetaCheck( $hestahub_client ) )
 	->add( new \HestaHub\Admin\Settings( $hestahub_client, $hestahub_credentials ) )
-	->add( new \HestaHub\Routing\Routes( $hestahub_client, __DIR__ ) )
+	->add( $hestahub_renderer )
+	->add( new \HestaHub\Routing\Routes( $hestahub_client, $hestahub_renderer, __DIR__ ) )
 	->add( new \HestaHub\Routing\ShadowNotice() );
 
 register_activation_hook( __FILE__, array( \HestaHub\Routing\Routes::class, 'activate' ) );

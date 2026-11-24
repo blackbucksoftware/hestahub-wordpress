@@ -7,6 +7,7 @@ namespace HestaHub\Tests\Routing;
 
 use HestaHub\Api\Client;
 use HestaHub\Api\Credentials;
+use HestaHub\Rendering\Renderer;
 use HestaHub\Routing\Routes;
 use HestaHub\Tests\Support\FakeHestaHub;
 use WP_UnitTestCase;
@@ -157,7 +158,7 @@ final class RulesTest extends WP_UnitTestCase {
 	private function next_request(): array {
 		global $wp_rewrite;
 		$wp_rewrite->extra_rules_top = array();
-		$routes                      = new Routes( $this->client(), dirname( __DIR__, 2 ) );
+		$routes                      = new Routes( $this->client(), new Renderer( $this->client(), dirname( __DIR__, 2 ) ), dirname( __DIR__, 2 ) );
 		$routes->register( hestahub() );
 		$routes->add_rules();
 		$routes->flush_if_changed();

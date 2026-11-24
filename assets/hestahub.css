@@ -1,0 +1,82 @@
+/*
+ * HestaHub: structural CSS only. No colours, fonts or spacing opinions:
+ * the theme sets those. A theme sets these custom properties, on .hestahub
+ * or anywhere above it:
+ *
+ *   --hestahub-gap              Space between cards and calendar months.
+ *   --hestahub-day-free         Background of a free day.
+ *   --hestahub-day-booked       Background of a booked night.
+ *   --hestahub-day-arrival      Background of a day a stay starts.
+ *   --hestahub-day-departure    Background of a day a stay ends.
+ *   --hestahub-day-changeover   Background of a day one stay ends and another starts.
+ *   --hestahub-day-unknown      Background of a day outside what is known.
+ *
+ * Unset, every day state is transparent; the calendar then tells booked
+ * from free by its markup alone.
+ */
+
+.hestahub {
+	box-sizing: border-box;
+}
+
+.hestahub *,
+.hestahub *::before,
+.hestahub *::after {
+	box-sizing: inherit;
+}
+
+.hestahub img {
+	max-width: 100%;
+	height: auto;
+}
+
+.hestahub-apartment-listing,
+.hestahub-clinic-listing {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	gap: var(--hestahub-gap, 1.5rem);
+}
+
+.hestahub-table-wrap {
+	overflow-x: auto;
+}
+
+.hestahub table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.hestahub-calendar {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+	gap: var(--hestahub-gap, 1.5rem);
+}
+
+.hestahub-month {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+}
+
+.hestahub-day--free {
+	background: var(--hestahub-day-free, transparent);
+}
+
+.hestahub-day--booked {
+	background: var(--hestahub-day-booked, transparent);
+}
+
+.hestahub-day--arrival {
+	background: var(--hestahub-day-arrival, transparent);
+}
+
+.hestahub-day--departure {
+	background: var(--hestahub-day-departure, transparent);
+}
+
+.hestahub-day--changeover {
+	background: var(--hestahub-day-changeover, transparent);
+}
+
+.hestahub-day--unknown {
+	background: var(--hestahub-day-unknown, transparent);
+}

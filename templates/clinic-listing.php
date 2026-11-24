@@ -1,15 +1,17 @@
 <?php
 /**
- * Placeholder: the clinic-listing template. A theme overrides it by copying it to
- * <theme>/hestahub/clinic-listing.php.
+ * The Clinic listing. A theme overrides it by copying it to
+ * <theme>/hestahub/clinic-listing.php. It renders content only: the page around it
+ * is the theme's.
+ *
+ * Variables, the wire objects exactly as received (the contract's schema is
+ * the field list): https://docs.hestahub.com/v1/#templates-and-hooks
+ *
+ * @var array[] $clinics Every Clinic shown, in the order received.
  *
  * @package HestaHub
  */
 
 defined( 'ABSPATH' ) || exit;
-
-get_header();
 ?>
-<main class="hestahub hestahub-clinic-listing"></main>
-<?php
-get_footer();
+<div class="hestahub hestahub-clinic-listing"></div>

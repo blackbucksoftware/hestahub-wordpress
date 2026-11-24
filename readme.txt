@@ -18,6 +18,21 @@ You need a HestaHub account and an API key.
 
 What the plugin must do, and how it talks to HestaHub, is defined by the HestaHub Public Tenant API contract: https://docs.hestahub.com/v1/
 
+=== Showing your data ===
+
+Set a base path for Apartments and for Clinics under Settings → HestaHub, and the plugin serves their listing and pages there. Elsewhere on your site, use the shortcode or the template tags. `show` is one of `apartment-listing`, `apartment`, `rate-table`, `calendar`, `clinic-listing` or `clinic`; `slug` limits a listing to some items, or names the one item to show.
+
+* `[hestahub show="apartment-listing" slug="hoettur, katla"]`
+* `[hestahub show="rate-table" slug="hoettur"]`
+* `<?php hestahub_render( 'calendar', array( 'slug' => 'hoettur' ) ); ?>` prints, like the shortcode.
+* `<?php $vars = hestahub_get( 'apartment', array( 'slug' => 'hoettur' ) ); ?>` returns the template's variables and prints nothing.
+
+Without data they show nothing.
+
+=== Your theme ===
+
+To change the markup, copy a template from the plugin's `templates/` folder into `hestahub/` in your (child) theme. The six templates render content only; your theme's header and footer surround them. Their variables are HestaHub's data exactly as received, documented in each template and in the contract. The stylesheet sets no colours: set the `--hestahub-…` custom properties listed in `assets/hestahub.css`, at least the calendar's day states.
+
 == External services ==
 
 This plugin connects to the HestaHub Public Tenant API, a service run by HestaHub. It needs it to show your Apartments, availability and Clinics.
