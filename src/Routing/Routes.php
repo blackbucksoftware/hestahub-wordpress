@@ -16,6 +16,10 @@ use HestaHub\Plugin;
  * The rules come from the base path settings, never from fetched data. A
  * resource is left out only while the meta copy the plugin holds does not
  * list it; with no meta copy at all, the base paths still resolve.
+ *
+ * Without data, a route walks the render ladder: the copy until stale_ttl,
+ * then 503 for at most 24 hours, then a 200 placeholder. A slug the plugin
+ * has never seen answers 404 throughout.
  */
 final class Routes implements Feature {
 
@@ -37,26 +41,50 @@ final class Routes implements Feature {
 		'clinics'    => array( 'clinic-listing', 'clinic' ),
 	);
 
+	/**
+	 * What an owned route answers.
+	 */
+	const FOUND       = 'found';
+	const NOT_FOUND   = 'not_found';
+	const UNAVAILABLE = 'unavailable';
+	const PLACEHOLDER = 'placeholder';
+
+	/**
+	 * Page caches store a short 503 and replay it as 200 OK: the contract
+	 * wants the body larger than this.
+	 */
+	const MIN_503_BODY = 512;
+
 	/** @var Client */
 	private $client;
 
 	/** @var string The plugin's folder. */
 	private $dir;
 
+	/** @var callable Sends a raw header. */
+	private $header;
+
 	/**
 	 * What this request's owned route resolved to, once known.
 	 *
-	 * @var array|null resource, slug, and found.
+	 * @var array|null resource, slug, answer, item and result.
 	 */
 	private $resolved = null;
 
 	/**
-	 * @param Client $client The API client.
-	 * @param string $dir    The plugin's folder, holding templates/.
+	 * @param Client        $client The API client.
+	 * @param string        $dir    The plugin's folder, holding templates/.
+	 * @param callable|null $header Sends a raw header. Defaults to header(),
+	 *                              unless headers are already sent.
 	 */
-	public function __construct( Client $client, string $dir ) {
+	public function __construct( Client $client, string $dir, $header = null ) {
 		$this->client = $client;
 		$this->dir    = $dir;
+		$this->header = $header ? $header : static function ( string $line ): void {
+			if ( ! headers_sent() ) {
+				header( $line );
+			}
+		};
 	}
 
 	public function register( Plugin $plugin ): void {
@@ -67,7 +95,14 @@ final class Routes implements Feature {
 		add_action( 'parse_query', array( $this, 'parse_query' ) );
 		add_filter( 'posts_pre_query', array( $this, 'posts_pre_query' ), 10, 2 );
 		add_filter( 'pre_handle_404', array( $this, 'pre_handle_404' ), 10, 2 );
+		add_action( 'template_redirect', array( $this, 'template_redirect' ), PHP_INT_MAX );
 		add_filter( 'template_include', array( $this, 'template_include' ) );
+		add_action( 'wp_head', array( $this, 'canonical' ) );
+		add_filter( 'document_title_parts', array( $this, 'document_title_parts' ) );
+		// Yoast SEO takes an owned route for the home page: its canonical and
+		// title would be the home page's. Ours replace them.
+		add_filter( 'wpseo_canonical', array( $this, 'wpseo_canonical' ) );
+		add_filter( 'wpseo_title', array( $this, 'wpseo_title' ) );
 	}
 
 	/**
@@ -159,8 +194,9 @@ final class Routes implements Feature {
 	}
 
 	/**
-	 * Answers an owned route: 200 for the listing and for a slug in the
-	 * current data, 404 for any other slug. Never 410.
+	 * Answers an owned route: 200 for data and for the placeholder, 503 while
+	 * the data is temporarily unavailable, 404 for a slug not in the data.
+	 * Never 410.
 	 *
 	 * @param bool      $preempt  Whether to skip WordPress's 404 handling.
 	 * @param \WP_Query $wp_query The main query.
@@ -170,14 +206,40 @@ final class Routes implements Feature {
 			return $preempt;
 		}
 		$resolved = $this->resolve( $wp_query );
-		if ( $resolved['found'] ) {
-			status_header( 200 );
-		} else {
-			$wp_query->set_404();
-			status_header( 404 );
-			nocache_headers();
+		switch ( $resolved['answer'] ) {
+			case self::NOT_FOUND:
+				$wp_query->set_404();
+				status_header( 404 );
+				nocache_headers();
+				break;
+			case self::UNAVAILABLE:
+				$this->send_503( $resolved['result']->retry_after() );
+				break;
+			default:
+				status_header( 200 );
 		}
 		return true;
+	}
+
+	/**
+	 * Pads a 503 body past what page caches would store. Hooked late to
+	 * template_redirect, just before the template renders.
+	 */
+	public function template_redirect(): void {
+		global $wp_query;
+		if ( ! $this->is_owned_route( $wp_query ) || self::UNAVAILABLE !== $this->resolve( $wp_query )['answer'] ) {
+			return;
+		}
+		$length = 0;
+		ob_start(
+			function ( $buffer, $phase ) use ( &$length ) {
+				$length += strlen( $buffer );
+				if ( ( $phase & PHP_OUTPUT_HANDLER_FINAL ) && $length <= self::MIN_503_BODY ) {
+					$buffer .= "\n<!-- " . str_repeat( '-', self::MIN_503_BODY - $length ) . ' -->';
+				}
+				return $buffer;
+			}
+		);
 	}
 
 	/**
@@ -191,9 +253,116 @@ final class Routes implements Feature {
 			return $template;
 		}
 		$resolved = $this->resolve( $wp_query );
-		$name     = self::TEMPLATES[ $resolved['resource'] ][ null === $resolved['slug'] ? 0 : 1 ];
-		$theme    = locate_template( 'hestahub/' . $name . '.php' );
+		switch ( $resolved['answer'] ) {
+			case self::UNAVAILABLE:
+				$name = 'unavailable';
+				break;
+			case self::PLACEHOLDER:
+				$name = 'placeholder';
+				break;
+			default:
+				$name = self::TEMPLATES[ $resolved['resource'] ][ null === $resolved['slug'] ? 0 : 1 ];
+		}
+		$theme = locate_template( 'hestahub/' . $name . '.php' );
 		return $theme ? $theme : $this->dir . '/templates/' . $name . '.php';
+	}
+
+	/**
+	 * Prints the route's canonical link: core prints one only for a post.
+	 * Hooked to wp_head.
+	 */
+	public function canonical(): void {
+		$url = $this->canonical_url();
+		if ( null !== $url ) {
+			echo '<link rel="canonical" href="' . esc_url( $url ) . '" />' . "\n";
+		}
+	}
+
+	/**
+	 * Names the route in the document title, where the theme lets WordPress
+	 * build it (title-tag).
+	 *
+	 * @param array $parts The title's parts.
+	 */
+	public function document_title_parts( $parts ) {
+		$title = $this->title();
+		if ( null !== $title ) {
+			$parts['title'] = $title;
+		}
+		return $parts;
+	}
+
+	/**
+	 * Drops Yoast SEO's canonical on an owned route: canonical() prints ours.
+	 *
+	 * @param string|false $canonical Yoast's canonical.
+	 * @return string|false
+	 */
+	public function wpseo_canonical( $canonical ) {
+		return null === $this->canonical_url() ? $canonical : false;
+	}
+
+	/**
+	 * Replaces Yoast SEO's title on an owned route.
+	 *
+	 * @param string $title Yoast's title.
+	 */
+	public function wpseo_title( $title ) {
+		$ours = $this->title();
+		if ( null === $ours ) {
+			return $title;
+		}
+		return $ours . ' ' . apply_filters( 'document_title_separator', '-' ) . ' ' . get_bloginfo( 'name', 'display' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core's hook.
+	}
+
+	/**
+	 * Before any output, as one unit, what keeps page caches from storing
+	 * the outage; then the status and when to come back.
+	 *
+	 * @param int $retry_after Seconds until the plugin next tries to fetch.
+	 */
+	private function send_503( int $retry_after ): void {
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		do_action( 'litespeed_control_set_nocache' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache's hook.
+		nocache_headers();
+		status_header( 503 );
+		call_user_func( $this->header, 'Retry-After: ' . max( 1, $retry_after ) );
+	}
+
+	/**
+	 * The canonical URL of the owned route this request is on; null off one
+	 * and on a 404.
+	 */
+	private function canonical_url(): ?string {
+		global $wp_query;
+		if ( ! $this->is_owned_route( $wp_query ) || is_404() ) {
+			return null;
+		}
+		$resolved = $this->resolve( $wp_query );
+		$path     = $this->bases()[ $resolved['resource'] ];
+		if ( null !== $resolved['slug'] ) {
+			$path .= '/' . $resolved['slug'];
+		}
+		return home_url( user_trailingslashit( $path ) );
+	}
+
+	/**
+	 * The route's title: the item's name, else the resource's label; null
+	 * off an owned route and on a 404.
+	 */
+	private function title(): ?string {
+		global $wp_query;
+		if ( ! $this->is_owned_route( $wp_query ) || is_404() ) {
+			return null;
+		}
+		$resolved = $this->resolve( $wp_query );
+		$item     = $resolved['item'];
+		if ( is_array( $item ) && isset( $item['name'] ) && is_string( $item['name'] ) && '' !== $item['name'] ) {
+			return $item['name'];
+		}
+		return Settings::label( $resolved['resource'] );
 	}
 
 	/**
@@ -228,11 +397,11 @@ final class Routes implements Feature {
 	}
 
 	/**
-	 * What an owned route resolves to: its listing, or a slug that is or is
-	 * not in the current data.
+	 * What an owned route resolves to: its resource, its slug (null for the
+	 * listing), what it answers, its item, and the read behind it.
 	 *
 	 * @param \WP_Query $query The main query.
-	 * @return array resource, slug (null for the listing), found.
+	 * @return array resource, slug, answer, item, result.
 	 */
 	private function resolve( $query ): array {
 		if ( null !== $this->resolved ) {
@@ -240,27 +409,42 @@ final class Routes implements Feature {
 		}
 		$resource = (string) $query->get( self::QV_RESOURCE );
 		$slug     = (string) $query->get( self::QV_SLUG );
+		$slug     = '' === $slug ? null : $slug;
+		$result   = $this->client->get( $resource );
+		$item     = null;
+
+		if ( $result->is_ok() ) {
+			$items  = array_filter( $result->data(), 'is_array' );
+			$item   = null === $slug ? null : $this->find( $items, $slug );
+			$answer = null === $slug || null !== $item ? self::FOUND : self::NOT_FOUND;
+		} elseif ( null !== $slug && ! $this->client->ever_listed( $resource, $slug ) ) {
+			$answer = self::NOT_FOUND;
+		} else {
+			$answer = $result->is_temporarily_unavailable() ? self::UNAVAILABLE : self::PLACEHOLDER;
+		}
+
 		$this->resolved = array(
 			'resource' => $resource,
-			'slug'     => '' === $slug ? null : $slug,
-			'found'    => '' === $slug || $this->in_current_data( $resource, $slug ),
+			'slug'     => $slug,
+			'answer'   => $answer,
+			'item'     => $item,
+			'result'   => $result,
 		);
 		return $this->resolved;
 	}
 
 	/**
-	 * Whether the current data of a resource has an item with this slug.
+	 * The item with this slug, or null.
 	 *
-	 * @param string $resource apartments or clinics.
-	 * @param string $slug     The slug.
+	 * @param array[] $items The copy's items.
+	 * @param string  $slug  The slug.
 	 */
-	private function in_current_data( string $resource, string $slug ): bool {
-		$result = $this->client->get( $resource );
-		foreach ( $result->is_ok() ? $result->data() : array() as $item ) {
-			if ( is_array( $item ) && isset( $item['slug'] ) && $item['slug'] === $slug ) {
-				return true;
+	private function find( array $items, string $slug ): ?array {
+		foreach ( $items as $item ) {
+			if ( isset( $item['slug'] ) && $item['slug'] === $slug ) {
+				return $item;
 			}
 		}
-		return false;
+		return null;
 	}
 }

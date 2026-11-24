@@ -48,6 +48,8 @@ final class RequestTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_listing_answers_200_with_the_listing_template() {
+		$this->respond( 200, $this->example( 'apartments' ) );
+
 		$this->go_to( home_url( '/wohnungen/' ) );
 
 		$this->assertFalse( is_404() );
@@ -117,10 +119,12 @@ final class RequestTest extends WP_UnitTestCase {
 		$this->assertCount( 0, $this->requests );
 	}
 
-	public function test_the_listing_needs_no_data_to_resolve() {
+	public function test_the_listing_resolves_whether_or_not_the_api_answers() {
+		$this->respond( 500 );
+
 		$this->go_to( home_url( '/wohnungen/' ) );
 
-		$this->assertCount( 0, $this->requests, 'Routes come from configuration, never from data.' );
-		$this->assertFalse( is_404() );
+		$this->assertFalse( is_404(), 'Routes come from configuration, never from data.' );
+		$this->assertSame( 'apartments', get_query_var( 'hestahub_resource' ) );
 	}
 }

@@ -3,7 +3,7 @@
 #
 # Usage: bin/i18n.sh [--check]
 #
-#   (default)  regenerates languages/hestahub.pot from hestahub.php and src/,
+#   (default)  regenerates languages/hestahub.pot from hestahub.php, src/ and templates/,
 #              and merges it into every languages/hestahub-<locale>.po.
 #              Then translate what is new or fuzzy in each .po.
 #   --check    fails if the .pot is out of date or a .po has an untranslated
@@ -27,7 +27,7 @@ POT=languages/hestahub.pot
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
 
-find hestahub.php src -name '*.php' | sort | xargs xgettext \
+find hestahub.php src templates -name '*.php' | sort | xargs xgettext \
 	--language=PHP --from-code=UTF-8 --no-location --no-wrap \
 	--add-comments=translators: \
 	--package-name=HestaHub --msgid-bugs-address=https://github.com/blackbucksoftware/hestahub-wordpress/issues \
