@@ -20,6 +20,8 @@ final class ShadowNoticeTest extends WP_UnitTestCase {
 		parent::set_up();
 		$this->set_permalink_structure( '/%postname%/' );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		// Only this notice is under test; the plugin's own Notices would add the PHP 7 notice on PHP 7.
+		remove_all_actions( 'admin_notices' );
 		( new ShadowNotice() )->register( hestahub() );
 
 		$this->pages['base']       = $this->page( 'wohnungen', 0, 'Unsere Wohnungen' );
