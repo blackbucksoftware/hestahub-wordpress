@@ -160,13 +160,31 @@ final class Client {
 	 */
 	public function resources(): ?array {
 		$meta = $this->get( 'meta' );
-		if ( ! $meta->is_ok() ) {
-			return null;
-		}
-		$data      = $meta->data();
+		return $meta->is_ok() ? $this->listed_resources( $meta->data() ) : null;
+	}
+
+	/**
+	 * Like resources(), but from the meta copy the plugin holds, without
+	 * fetching. Null when it holds none.
+	 *
+	 * @return string[]|null
+	 */
+	public function held_resources(): ?array {
+		$meta = $this->held( 'meta' );
+		return null === $meta ? null : $this->listed_resources( $meta );
+	}
+
+	/**
+	 * The resources a meta body lists that this plugin serves, in order,
+	 * each once.
+	 *
+	 * @param array $meta meta's data.
+	 * @return string[]
+	 */
+	private function listed_resources( array $meta ): array {
 		$resources = array();
-		if ( isset( $data['resources'] ) && is_array( $data['resources'] ) ) {
-			foreach ( $data['resources'] as $resource ) {
+		if ( isset( $meta['resources'] ) && is_array( $meta['resources'] ) ) {
+			foreach ( $meta['resources'] as $resource ) {
 				if ( in_array( $resource, self::RESOURCES, true ) && ! in_array( $resource, $resources, true ) ) {
 					$resources[] = $resource;
 				}

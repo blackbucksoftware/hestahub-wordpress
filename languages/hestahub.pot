@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-23 23:26+0100\n"
+"POT-Creation-Date: 2026-11-24 09:03+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -124,4 +124,21 @@ msgid "Clinics"
 msgstr ""
 
 msgid "Apartments"
+msgstr ""
+
+#. translators: 1: Apartments or Clinics, 2: the base path, e.g. /apartments/.
+#, php-format
+msgid "The %1$s base path %2$s now shadows content on this site."
+msgstr ""
+
+msgid "Shadowed: these pages no longer show at their URLs, because the plugin's pages show there instead:"
+msgstr ""
+
+msgid "These pages are still reachable, but orphaned under a base path that no longer resolves:"
+msgstr ""
+
+msgid "Also shadowed, as a side effect: the page's feed, embed and trackback URLs:"
+msgstr ""
+
+msgid "Dismiss"
 msgstr ""

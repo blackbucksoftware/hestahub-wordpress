@@ -47,8 +47,12 @@ $hestahub_client      = new \HestaHub\Api\Client( $hestahub_credentials );
 hestahub()
 	->add( new \HestaHub\I18n( plugin_basename( __FILE__ ) ) )
 	->add( new \HestaHub\Api\MetaCheck( $hestahub_client ) )
-	->add( new \HestaHub\Admin\Settings( $hestahub_client, $hestahub_credentials ) );
+	->add( new \HestaHub\Admin\Settings( $hestahub_client, $hestahub_credentials ) )
+	->add( new \HestaHub\Routing\Routes( $hestahub_client, __DIR__ ) )
+	->add( new \HestaHub\Routing\ShadowNotice() );
 
+register_activation_hook( __FILE__, array( \HestaHub\Routing\Routes::class, 'activate' ) );
+register_deactivation_hook( __FILE__, array( \HestaHub\Routing\Routes::class, 'deactivate' ) );
 register_deactivation_hook( __FILE__, array( \HestaHub\Api\MetaCheck::class, 'unschedule' ) );
 
 hestahub()->hook();
