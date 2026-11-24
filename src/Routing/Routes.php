@@ -362,10 +362,22 @@ final class Routes implements Feature {
 		if ( null === $resolved ) {
 			return null;
 		}
-		$path = $this->bases()[ $resolved['resource'] ];
-		if ( null !== $resolved['slug'] ) {
-			$path .= '/' . $resolved['slug'];
+		return self::url( $resolved['resource'], $resolved['slug'] );
+	}
+
+	/**
+	 * The URL of a resource's listing, or of one item; null while its base
+	 * path is not set.
+	 *
+	 * @param string      $resource apartments or clinics.
+	 * @param string|null $slug     An item's slug, or null for the listing.
+	 */
+	public static function url( string $resource, ?string $slug = null ): ?string {
+		$base = isset( Settings::BASES[ $resource ] ) ? get_option( Settings::BASES[ $resource ], '' ) : '';
+		if ( ! is_string( $base ) || '' === $base ) {
+			return null;
 		}
+		$path = null === $slug ? $base : $base . '/' . $slug;
 		return home_url( user_trailingslashit( $path ) );
 	}
 

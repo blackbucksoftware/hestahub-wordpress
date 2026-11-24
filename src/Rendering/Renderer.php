@@ -67,6 +67,9 @@ final class Renderer implements Feature {
 	/** @var string The plugin's folder. */
 	private $dir;
 
+	/** @var string[] The endpoints of the templates being rendered, innermost last. */
+	private $rendering = array();
+
 	/**
 	 * @param Client $client The API client.
 	 * @param string $dir    The plugin's folder, holding templates/ and assets/.
@@ -159,9 +162,30 @@ final class Renderer implements Feature {
 	 */
 	public function render( string $template, array $variables ): string {
 		$this->enqueue();
+		$this->rendering[] = isset( self::TEMPLATES[ $template ] ) ? self::TEMPLATES[ $template ]['endpoint'] : '';
 		ob_start();
-		self::run( $this->locate( $template ), $variables );
+		try {
+			self::run( $this->locate( $template ), $variables );
+		} finally {
+			array_pop( $this->rendering );
+		}
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * The envelope of the data the innermost template being rendered reads:
+	 * its currency and whether its amounts include VAT. Nulls outside a
+	 * render, or for data that carries no money.
+	 *
+	 * @return array currency (string|null), prices_include_tax (bool|null).
+	 */
+	public function envelope(): array {
+		$endpoint = end( $this->rendering );
+		$result   = $endpoint ? $this->client->get( $endpoint ) : null;
+		return array(
+			'currency'           => $result ? $result->currency() : null,
+			'prices_include_tax' => $result ? $result->prices_include_tax() : null,
+		);
 	}
 
 	/**

@@ -66,6 +66,7 @@ final class RequestTest extends WP_UnitTestCase {
 
 	public function test_a_slug_in_the_current_data_answers_200_with_the_apartment_template() {
 		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->respond( 200, $this->example( 'availability' ) ); // The page's calendar.
 
 		$this->go_to( home_url( '/wohnungen/hoettur/' ) );
 
