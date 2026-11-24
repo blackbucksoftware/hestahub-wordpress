@@ -9,6 +9,8 @@
  *
  * @var array $availability The Apartment's entry in availability: slug, blocked.
  * @var array $window       The half-open window the ranges describe: from, to.
+ *                          Either may be null. A day outside the window, or
+ *                          with no window, is unknown, never free.
  *
  * @package HestaHub
  */

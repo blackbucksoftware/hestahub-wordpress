@@ -275,11 +275,7 @@ final class Routes implements Feature {
 			include $this->dir . '/templates/no-data/' . $resolved['answer'] . '.php';
 			return;
 		}
-		$name      = self::TEMPLATES[ $resolved['resource'] ][ null === $resolved['slug'] ? 0 : 1 ];
-		$variables = $this->renderer->variables( $name, null === $resolved['slug'] ? array() : array( $resolved['slug'] ) );
-		if ( null !== $variables ) {
-			echo $this->renderer->render( $name, $variables ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- templates escape.
-		}
+		echo $this->renderer->render( $resolved['template'], $resolved['variables'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- templates escape.
 	}
 
 	/**
@@ -382,7 +378,7 @@ final class Routes implements Feature {
 		if ( null === $resolved ) {
 			return null;
 		}
-		$item = $resolved['item'];
+		$item = null === $resolved['slug'] || null === $resolved['variables'] ? null : reset( $resolved['variables'] );
 		if ( is_array( $item ) && isset( $item['name'] ) && is_string( $item['name'] ) && '' !== $item['name'] ) {
 			return $item['name'];
 		}
@@ -439,7 +435,8 @@ final class Routes implements Feature {
 	 * listing), what it answers, its item, and the read behind it.
 	 *
 	 * @param \WP_Query $query The main query.
-	 * @return array resource, slug, answer, item, result.
+	 * @return array resource, slug (null for the listing), template, answer,
+	 *               variables (the template's, when found) and result.
 	 */
 	private function resolve( $query ): array {
 		if ( null !== $this->resolved ) {
@@ -448,13 +445,13 @@ final class Routes implements Feature {
 		$resource = (string) $query->get( self::QV_RESOURCE );
 		$slug     = (string) $query->get( self::QV_SLUG );
 		$slug     = '' === $slug ? null : $slug;
-		$result   = $this->client->get( $resource );
-		$item     = null;
+		$template  = self::TEMPLATES[ $resource ][ null === $slug ? 0 : 1 ];
+		$result    = $this->client->get( $resource );
+		$variables = null;
 
 		if ( $result->is_ok() ) {
-			$items  = array_filter( $result->data(), 'is_array' );
-			$item   = null === $slug ? null : $this->find( $items, $slug );
-			$answer = null === $slug || null !== $item ? self::FOUND : self::NOT_FOUND;
+			$variables = $this->renderer->from_data( $template, $result->data(), null === $slug ? array() : array( $slug ) );
+			$answer    = null === $variables ? self::NOT_FOUND : self::FOUND;
 		} elseif ( null !== $slug && ! $this->client->ever_listed( $resource, $slug ) ) {
 			$answer = self::NOT_FOUND;
 		} else {
@@ -462,27 +459,13 @@ final class Routes implements Feature {
 		}
 
 		$this->resolved = array(
-			'resource' => $resource,
-			'slug'     => $slug,
-			'answer'   => $answer,
-			'item'     => $item,
-			'result'   => $result,
+			'resource'  => $resource,
+			'slug'      => $slug,
+			'template'  => $template,
+			'answer'    => $answer,
+			'variables' => $variables,
+			'result'    => $result,
 		);
 		return $this->resolved;
-	}
-
-	/**
-	 * The item with this slug, or null.
-	 *
-	 * @param array[] $items The copy's items.
-	 * @param string  $slug  The slug.
-	 */
-	private function find( array $items, string $slug ): ?array {
-		foreach ( $items as $item ) {
-			if ( isset( $item['slug'] ) && $item['slug'] === $slug ) {
-				return $item;
-			}
-		}
-		return null;
 	}
 }

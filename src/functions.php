@@ -21,9 +21,9 @@ if ( ! function_exists( 'hestahub_render' ) ) {
 	 *                     A listing shows only these; a single shows the first.
 	 */
 	function hestahub_render( string $what, array $args = array() ): void {
-		$renderer = hestahub()->get( \HestaHub\Rendering\Renderer::class );
-		if ( $renderer instanceof \HestaHub\Rendering\Renderer ) {
-			echo $renderer->show( $what, \HestaHub\Rendering\Renderer::slugs( isset( $args['slug'] ) ? $args['slug'] : array() ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- templates escape.
+		$variables = hestahub_get( $what, $args );
+		if ( null !== $variables ) {
+			echo hestahub()->get( \HestaHub\Rendering\Renderer::class )->render( $what, $variables ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- templates escape.
 		}
 	}
 }

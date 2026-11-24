@@ -25,16 +25,40 @@ final class Renderer implements Feature {
 	const STYLE     = 'hestahub';
 
 	/**
-	 * The templates a theme may override, each with the endpoint it reads,
-	 * the variable it receives, and whether it shows one item (by slug).
+	 * The templates a theme may override: the endpoint each reads, the
+	 * variable it receives, and whether it shows one item, by slug.
 	 */
 	const TEMPLATES = array(
-		'apartment-listing' => array( 'apartments', 'apartments', false ),
-		'apartment'         => array( 'apartments', 'apartment', true ),
-		'rate-table'        => array( 'apartments', 'apartment', true ),
-		'calendar'          => array( 'availability', 'availability', true ),
-		'clinic-listing'    => array( 'clinics', 'clinics', false ),
-		'clinic'            => array( 'clinics', 'clinic', true ),
+		'apartment-listing' => array(
+			'endpoint' => 'apartments',
+			'variable' => 'apartments',
+			'single'   => false,
+		),
+		'apartment'         => array(
+			'endpoint' => 'apartments',
+			'variable' => 'apartment',
+			'single'   => true,
+		),
+		'rate-table'        => array(
+			'endpoint' => 'apartments',
+			'variable' => 'apartment',
+			'single'   => true,
+		),
+		'calendar'          => array(
+			'endpoint' => 'availability',
+			'variable' => 'availability',
+			'single'   => true,
+		),
+		'clinic-listing'    => array(
+			'endpoint' => 'clinics',
+			'variable' => 'clinics',
+			'single'   => false,
+		),
+		'clinic'            => array(
+			'endpoint' => 'clinics',
+			'variable' => 'clinic',
+			'single'   => true,
+		),
 	);
 
 	/** @var Client */
@@ -59,8 +83,7 @@ final class Renderer implements Feature {
 
 	/**
 	 * The variables a template receives, from the data the plugin holds;
-	 * null when there is nothing to render. A listing may be limited to
-	 * some slugs, kept in the order received; a single needs its slug.
+	 * null when there is nothing to show.
 	 *
 	 * @param string   $template A template name, e.g. apartment-listing.
 	 * @param string[] $slugs    The slugs to show; empty for all.
@@ -70,14 +93,29 @@ final class Renderer implements Feature {
 		if ( ! isset( self::TEMPLATES[ $template ] ) ) {
 			return null;
 		}
-		list( $endpoint, $variable, $single ) = self::TEMPLATES[ $template ];
-		$result                                 = $this->client->get( $endpoint );
-		if ( ! $result->is_ok() ) {
+		$result = $this->client->get( self::TEMPLATES[ $template ]['endpoint'] );
+		return $result->is_ok() ? $this->from_data( $template, $result->data(), $slugs ) : null;
+	}
+
+	/**
+	 * The variables a template receives, from an endpoint's data; null when
+	 * there is nothing to show. A listing may be limited to some slugs, kept
+	 * in the order received, and shows nothing when none of them is there;
+	 * a single needs its slug.
+	 *
+	 * @param string   $template A template name.
+	 * @param array    $data     The data of the template's endpoint.
+	 * @param string[] $slugs    The slugs to show; empty for all.
+	 * @return array|null
+	 */
+	public function from_data( string $template, array $data, array $slugs = array() ): ?array {
+		if ( ! isset( self::TEMPLATES[ $template ] ) ) {
 			return null;
 		}
-		$data = $result->data();
+		$spec = self::TEMPLATES[ $template ];
 
-		if ( 'availability' === $endpoint ) {
+		if ( 'availability' === $spec['endpoint'] ) {
+			// The calendar also needs the window its ranges describe.
 			$entry = $this->find( isset( $data['apartments'] ) && is_array( $data['apartments'] ) ? $data['apartments'] : array(), $slugs );
 			if ( null === $entry ) {
 				return null;
@@ -91,9 +129,9 @@ final class Renderer implements Feature {
 			);
 		}
 
-		if ( $single ) {
+		if ( $spec['single'] ) {
 			$item = $this->find( $data, $slugs );
-			return null === $item ? null : array( $variable => $item );
+			return null === $item ? null : array( $spec['variable'] => $item );
 		}
 
 		if ( $slugs ) {
@@ -105,8 +143,11 @@ final class Renderer implements Feature {
 					}
 				)
 			);
+			if ( ! $data ) {
+				return null;
+			}
 		}
-		return array( $variable => $data );
+		return array( $spec['variable'] => $data );
 	}
 
 	/**
@@ -167,6 +208,8 @@ final class Renderer implements Feature {
 	 * Hooked to wp_enqueue_scripts.
 	 */
 	public function enqueue_for_shortcode(): void {
+		// Early, so the styles are in the head; even if the shortcode then
+		// finds nothing to show, as it cannot know before it runs.
 		$post = get_post();
 		if ( is_singular() && $post && has_shortcode( $post->post_content, self::SHORTCODE ) ) {
 			$this->enqueue();
@@ -196,8 +239,9 @@ final class Renderer implements Feature {
 		}
 		$clean = array();
 		foreach ( $slugs as $slug ) {
-			if ( is_string( $slug ) && '' !== trim( $slug, " \t\n\r\0\x0B" ) ) {
-				$clean[] = trim( $slug, " \t\n\r\0\x0B" );
+			$slug = is_string( $slug ) ? trim( $slug, " \t\n\r\0\x0B" ) : '';
+			if ( '' !== $slug ) {
+				$clean[] = $slug;
 			}
 		}
 		return $clean;

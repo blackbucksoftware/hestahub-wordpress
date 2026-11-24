@@ -37,9 +37,6 @@ final class Plugin {
 	}
 
 	/**
-	 * Hooks the plugin into WordPress.
-	 */
-	/**
 	 * The added feature of this class, or null.
 	 *
 	 * @param string $class A class name.
@@ -53,6 +50,9 @@ final class Plugin {
 		return null;
 	}
 
+	/**
+	 * Hooks the plugin into WordPress.
+	 */
 	public function hook(): void {
 		add_action( 'plugins_loaded', array( $this, 'boot' ) );
 	}

@@ -143,6 +143,26 @@ final class RendererTest extends WP_UnitTestCase {
 		$this->assertSame( '', do_shortcode( '[hestahub show="gaestebuch"]' ) );
 	}
 
+	public function test_a_listing_limited_to_slugs_not_there_renders_nothing() {
+		$this->respond( 200, $this->example( 'apartments' ) );
+
+		$this->assertSame( '', do_shortcode( '[hestahub show="apartment-listing" slug="nie-gesehen"]' ) );
+	}
+
+	public function test_an_empty_listing_from_the_api_still_renders() {
+		$this->respond( 200, $this->apartments( array() ) );
+
+		$this->assertSame( 'parent:apartment-listing.php', do_shortcode( '[hestahub show="apartment-listing"]' ) );
+		$this->assertSame( array( 'apartments' => array() ), $GLOBALS['hestahub_test_vars'] );
+	}
+
+	public function test_without_data_hestahub_render_prints_nothing() {
+		$this->respond( 500 );
+
+		$this->assertSame( '', hestahub_get_rendered( 'apartment-listing' ) );
+		$this->assertFalse( wp_style_is( 'hestahub', 'enqueued' ) );
+	}
+
 	public function test_hestahub_get_returns_the_template_variables_and_renders_nothing() {
 		$this->respond( 200, $this->example( 'clinics' ) );
 
