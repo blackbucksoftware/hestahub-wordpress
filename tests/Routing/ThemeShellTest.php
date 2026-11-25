@@ -83,8 +83,8 @@ final class ThemeShellTest extends WP_UnitTestCase {
 
 		$page = $this->page( '/wohnungen/' );
 
-		$this->assertMatchesRegularExpression( '#<header>H</header>\s*<main class="hestahub-page">\s*<div class="hestahub hestahub-apartment-listing">.*</main>\s*<footer>F</footer>#s', $page );
-		$this->assertStringNotContainsString( 'id="secondary"', $page );
+		$this->assertStringEndsWith( "<header>H</header><main class=\"hestahub-page\">\n" . $this->content() . "</main>\n<footer>F</footer></body></html>", $page, 'As before themes could override the shell.' );
+		$this->assertStringContainsString( 'hestahub-apartment-listing', $page );
 	}
 
 	public function test_the_content_renders_once_inside_the_themes_column() {
@@ -163,6 +163,42 @@ final class ThemeShellTest extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '#<main class="hestahub-page">.*hestahub-unavailable.*</main><footer>F</footer>#s', $page );
 	}
 
+	public function test_an_apartment_page_renders_in_the_themes_column() {
+		$this->theme( 'columns', self::shell( 'columns' ) );
+		$this->use_theme( 'columns' );
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->respond( 200, $this->example( 'availability' ) );
+
+		$page = $this->page( '/wohnungen/hoettur/' );
+
+		$this->assertSame( 200, $this->status );
+		$this->assertMatchesRegularExpression( '#<main class="col"><article class="hestahub hestahub-apartment">.*</main><aside id="secondary">#s', $page );
+	}
+
+	public function test_the_fallback_shows_the_placeholder_with_its_status() {
+		$this->setExpectedIncorrectUsage( 'hestahub_content' );
+		delete_option( 'hestahub_api_key' );
+		$this->theme( 'forgot', '<?php get_header(); ?><main class="col"></main><?php get_footer();' );
+		$this->use_theme( 'forgot' );
+
+		$page = $this->page( '/wohnungen/' );
+
+		$this->assertSame( 200, $this->status );
+		$this->assertMatchesRegularExpression( '#<main class="hestahub-page">.*hestahub-placeholder.*</main><footer>F</footer>#s', $page );
+	}
+
+	public function test_a_second_call_prints_nothing() {
+		$this->theme( 'twice', '<?php get_header(); ?><main class="col"><?php hestahub_content(); ?></main><aside><?php hestahub_content(); ?></aside><?php get_footer();' );
+		$this->use_theme( 'twice' );
+		$this->respond( 200, $this->example( 'apartments' ) );
+
+		$page = $this->page( '/wohnungen/' );
+
+		$this->assertSame( 1, substr_count( $page, 'hestahub-apartment-listing' ) );
+		$this->assertStringContainsString( '<aside></aside>', $page );
+	}
+
 	public function test_off_an_owned_route_the_tag_prints_nothing() {
 		$this->visit( '/' );
 
@@ -219,12 +255,22 @@ final class ThemeShellTest extends WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * Switches to one of this test's themes.
+	 *
+	 * @param string $stylesheet The theme's folder.
+	 */
 	private function use_theme( string $stylesheet ): void {
 		register_theme_directory( $this->root );
 		wp_clean_themes_cache();
 		switch_theme( $stylesheet );
 	}
 
+	/**
+	 * Deletes a folder and everything in it.
+	 *
+	 * @param string $dir The folder.
+	 */
 	private function remove( string $dir ): void {
 		if ( ! is_dir( $dir ) ) {
 			return;

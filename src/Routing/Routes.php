@@ -108,7 +108,8 @@ final class Routes implements Feature {
 		add_filter( 'pre_handle_404', array( $this, 'pre_handle_404' ), 10, 2 );
 		add_action( 'template_redirect', array( $this, 'template_redirect' ), PHP_INT_MAX );
 		add_filter( 'template_include', array( $this, 'template_include' ) );
-		add_action( 'hestahub_content', array( $this, 'render_content' ) );
+		// Internal: fired by hestahub_content(), not a hook for themes or plugins.
+		add_action( 'hestahub_print_content', array( $this, 'print_content' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'wp_head', array( $this, 'canonical' ) );
 		add_filter( 'document_title_parts', array( $this, 'document_title_parts' ) );
@@ -265,17 +266,30 @@ final class Routes implements Feature {
 	 * The page shell, which prints the theme's header and footer around the
 	 * content: the theme's copy (child, then parent), else the plugin's.
 	 *
+	 * Side effect: for a theme's copy, it also hooks content_before_footer()
+	 * to get_footer, in case that copy never prints the content.
+	 *
 	 * @param string $template The template WordPress chose.
 	 */
 	public function template_include( $template ) {
 		if ( null === $this->current() ) {
 			return $template;
 		}
-		$shell = $this->renderer->locate( 'shell' );
-		if ( $this->dir . '/templates/shell.php' !== $shell ) {
+		if ( $this->renderer->is_overridden( 'shell' ) ) {
 			add_action( 'get_footer', array( $this, 'content_before_footer' ), 0 );
 		}
-		return $shell;
+		return $this->renderer->locate( 'shell' );
+	}
+
+	/**
+	 * Prints the content once per request, where the shell calls
+	 * hestahub_content(): a second call prints nothing. Hooked to
+	 * hestahub_print_content.
+	 */
+	public function print_content(): void {
+		if ( ! $this->printed ) {
+			$this->render_content();
+		}
 	}
 
 	/**
@@ -300,8 +314,7 @@ final class Routes implements Feature {
 	 * Prints the route's content: its template, found in the theme or the
 	 * plugin and given the wire objects; or, without data, the plugin's own
 	 * no-data page. The contract names the templates a theme may override,
-	 * and the no-data pages are not among them. Hooked to hestahub_content,
-	 * which hestahub_content() fires.
+	 * and the no-data pages are not among them.
 	 */
 	public function render_content(): void {
 		$resolved = $this->current();
