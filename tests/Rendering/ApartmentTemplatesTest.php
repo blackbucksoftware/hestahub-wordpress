@@ -97,7 +97,16 @@ final class ApartmentTemplatesTest extends WP_UnitTestCase {
 
 	public function test_without_a_base_path_a_card_has_no_link() {
 		delete_option( 'hestahub_apartments_base' );
-		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->respond(
+			200,
+			$this->example(
+				'apartments',
+				function ( $body ) {
+					$body['data'] = array( $body['data'][0] );
+					return $body;
+				}
+			)
+		);
 
 		$xpath = $this->render( 'apartment-listing' );
 
@@ -111,6 +120,7 @@ final class ApartmentTemplatesTest extends WP_UnitTestCase {
 			$this->example(
 				'apartments',
 				function ( $body ) {
+					$body['data']   = array( $body['data'][0] );
 					$second         = $body['data'][0];
 					$second['slug'] = 'katla';
 					$second['name'] = 'Katla';
@@ -289,7 +299,12 @@ final class ApartmentTemplatesTest extends WP_UnitTestCase {
 
 		$this->assertSame( array( 'Nebensaison', 'Hauptsaison' ), $this->texts( $xpath, '//section/h3' ) );
 		$this->assertSame( array( 'All dates not in another season' ), $this->texts( $xpath, '//section[1]/p[@class="hestahub-periods"]' ) );
-		$this->assertSame( array( '26.06.2027 – 28.08.2027' ), $this->texts( $xpath, '//section[2]/ul[@class="hestahub-periods"]/li' ), 'Both days inclusive.' );
+		// The published example's dates move with the day it was built.
+		$period = json_decode( $this->example( 'apartments' ), true )['data'][0]['pricing']['seasons'][1]['periods'][0];
+		$day    = static function ( $date ) {
+			return implode( '.', array_reverse( explode( '-', $date ) ) );
+		};
+		$this->assertSame( array( $day( $period['first_day'] ) . ' – ' . $day( $period['last_day'] ) ), $this->texts( $xpath, '//section[2]/ul[@class="hestahub-periods"]/li' ), 'Both days inclusive.' );
 		$this->assertSame( array( 'Nebensaison, 3–6 nights', 'Nebensaison, 7+ nights' ), $this->texts( $xpath, '//section[1]//table[@class="hestahub-tiers"]/tbody/tr/th' ) );
 		$this->assertSame( array( '€95.00', '€45.00' ), $this->texts( $xpath, '//section[1]//table[@class="hestahub-tiers"]/tbody/tr[1]/td' ) );
 		$this->assertSame( 'Freitag, 15 Uhr, bis Sonntag, 17 Uhr', $xpath->evaluate( 'string(//span[@class="hestahub-bundle-terms"])' ) );

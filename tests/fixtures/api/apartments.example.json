@@ -68,8 +68,8 @@
             "is_default": false,
             "periods": [
               {
-                "first_day": "2027-06-26",
-                "last_day": "2027-08-28"
+                "first_day": "2027-06-27",
+                "last_day": "2027-08-29"
               }
             ],
             "tiers": [
@@ -84,6 +84,21 @@
             "bundles": []
           }
         ]
+      },
+      "portal_url": null
+    },
+    {
+      "slug": "katla",
+      "name": "Katla",
+      "description": null,
+      "building": null,
+      "qm": null,
+      "max_persons": null,
+      "features": [],
+      "images": [],
+      "blueprint": null,
+      "pricing": {
+        "seasons": []
       },
       "portal_url": null
     }
