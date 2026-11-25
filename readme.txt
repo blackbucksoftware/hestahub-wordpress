@@ -4,7 +4,7 @@ Tags: apartments, availability, booking, holiday rental, clinics
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
@@ -48,5 +48,5 @@ The contract: https://docs.hestahub.com/v1/
 
 == Changelog ==
 
-= 0.1.0 =
+= 1.0.0 =
 * The empty plugin: bootstrap, uninstall and release build.

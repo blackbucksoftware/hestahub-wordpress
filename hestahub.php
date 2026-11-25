@@ -3,7 +3,7 @@
  * Plugin Name:       HestaHub
  * Plugin URI:        https://github.com/blackbucksoftware/hestahub-wordpress
  * Description:       Shows your HestaHub Apartments, availability and Clinics on your own website.
- * Version:           0.1.0
+ * Version:           1.0.0
  * Requires at least: 6.8
  * Requires PHP:      7.4
  * Author:            Blackbuck Software
