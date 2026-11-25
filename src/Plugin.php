@@ -14,7 +14,7 @@ final class Plugin {
 	/**
 	 * Must match the Version header in hestahub.php.
 	 */
-	const VERSION = '1.1.0';
+	const VERSION = '1.2.0';
 
 	/**
 	 * @var Feature[]

@@ -4,7 +4,7 @@ Tags: apartments, availability, booking, holiday rental, clinics
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
@@ -60,6 +60,9 @@ Updates: unless installed from wordpress.org, the plugin also checks GitHub for 
 The contract: https://docs.hestahub.com/v1/
 
 == Changelog ==
+
+= 1.2.0 =
+* The availability calendar pages through its months without reloading the page. Without JavaScript, or if anything goes wrong, its links reload the page as before. A theme that overrides `calendar.php` keeps in-place paging by keeping two classes; see "Your theme".
 
 = 1.1.0 =
 * A theme can give the base paths its own layout, with columns or a sidebar: copy `shell.php` into `hestahub/` in your theme and call the new `hestahub_content()` where the content belongs. See "Your theme".
