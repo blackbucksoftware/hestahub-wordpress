@@ -52,4 +52,11 @@ The contract: https://docs.hestahub.com/v1/
 * No change to the plugin: release build fixed after the 1.0.0 build failed.
 
 = 1.0.0 =
-* The empty plugin: bootstrap, uninstall and release build.
+* Apartments: a listing, a page for each Apartment, its rate table and an availability calendar.
+* Clinics: a listing and a page for each Clinic.
+* Served at base paths you choose, or placed anywhere with the `[hestahub]` shortcode and the `hestahub_render()` and `hestahub_get()` template tags.
+* Templates a theme overrides by copying them into `hestahub/`, and a stylesheet with no colours, set through `--hestahub-…` custom properties.
+* Reads from HestaHub on the server, caches for as long as HestaHub says, and serves the last good copy while HestaHub is unreachable.
+* Settings screen: API key from an environment variable, `wp-config.php` or the database; base paths; connection test and refresh.
+* Admin notices, Site Health checks and an email when something is wrong.
+* Updates from GitHub Releases.
