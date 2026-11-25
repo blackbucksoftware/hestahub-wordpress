@@ -15,28 +15,50 @@
 
 	var CALENDAR = '.hestahub-calendar';
 	var LINK = '.hestahub-calendar-nav a';
+	var request = null;
+	var live = null;
 
 	if ( ! window.fetch || ! window.DOMParser || ! window.history || ! window.history.pushState || ! Element.prototype.closest ) {
 		return;
 	}
 
-	var request = null;
-	var live = null;
-
+	/**
+	 * The calendars in a document, in order.
+	 *
+	 * @param {Document} root The document.
+	 * @return {Element[]} The calendars.
+	 */
 	function calendars( root ) {
 		return Array.prototype.slice.call( root.querySelectorAll( CALENDAR ) );
 	}
 
 	/**
-	 * Tells screen readers which months are now shown.
+	 * History state with ours added, keeping what a theme or plugin stored.
+	 *
+	 * @return {Object} The state.
+	 */
+	function state() {
+		var merged = {};
+		var key;
+		var current = window.history.state;
+		if ( current && 'object' === typeof current ) {
+			for ( key in current ) {
+				if ( Object.prototype.hasOwnProperty.call( current, key ) ) {
+					merged[ key ] = current[ key ];
+				}
+			}
+		}
+		merged.hestahub = true;
+		return merged;
+	}
+
+	/**
+	 * Tells screen readers which months are now shown. The live region
+	 * exists from the start: one added already filled is often not read.
+	 *
+	 * @param {Element} calendar The calendar the visitor used.
 	 */
 	function announce( calendar ) {
-		if ( ! live ) {
-			live = document.createElement( 'div' );
-			live.setAttribute( 'aria-live', 'polite' );
-			live.setAttribute( 'style', 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);border:0;' );
-			document.body.appendChild( live );
-		}
 		live.textContent = Array.prototype.map.call( calendar.querySelectorAll( 'caption' ), function ( caption ) {
 			return caption.textContent.trim();
 		} ).join( ', ' );
@@ -44,7 +66,10 @@
 
 	/**
 	 * Moves focus to the link the visitor used, in its new calendar, or to
-	 * the calendar if that link is gone (the end of the window).
+	 * the calendar if there is no such link (the end of the window).
+	 *
+	 * @param {Element}     calendar The new calendar.
+	 * @param {string|null} rel      The used link's rel: prev or next.
 	 */
 	function refocus( calendar, rel ) {
 		var link = rel ? calendar.querySelector( LINK + '[rel="' + rel + '"]' ) : null;
@@ -60,12 +85,12 @@
 	 * Swaps every calendar on the page for the same-position one on the page
 	 * at url: the month parameter moves them all, as a reload would.
 	 *
-	 * @param {string}      url    The page to take the calendars from.
-	 * @param {number}      index  Which calendar the visitor used.
-	 * @param {string|null} rel    The link's rel (prev or next), to refocus.
-	 * @param {boolean}     push   Whether to add a history entry.
+	 * @param {string}       url  The page to take the calendars from.
+	 * @param {Object|null}  used From a click: index (which calendar) and rel
+	 *                            (of the link), to add a history entry and
+	 *                            refocus. Null from Back or Forward.
 	 */
-	function swap( url, index, rel, push ) {
+	function swap( url, used ) {
 		var current = calendars( document );
 		if ( ! current.length ) {
 			window.location.assign( url );
@@ -88,23 +113,23 @@
 			} )
 			.then( function ( html ) {
 				var fresh = calendars( new DOMParser().parseFromString( html, 'text/html' ) );
+				var swapped;
+				var calendar;
 				if ( fresh.length !== current.length ) {
 					throw new Error( 'Calendars differ' );
 				}
-				var swapped = current.map( function ( calendar, i ) {
+				swapped = current.map( function ( old, i ) {
 					var replacement = document.importNode( fresh[ i ], true );
-					calendar.parentNode.replaceChild( replacement, calendar );
+					old.parentNode.replaceChild( replacement, old );
 					return replacement;
 				} );
 				request = null;
-				if ( push ) {
-					window.history.pushState( { hestahub: true }, '', url );
+				calendar = swapped[ used ? Math.min( used.index, swapped.length - 1 ) : 0 ];
+				if ( used ) {
+					window.history.pushState( state(), '', url );
+					refocus( calendar, used.rel );
 				}
-				var used = swapped[ Math.min( index, swapped.length - 1 ) ];
-				if ( rel ) {
-					refocus( used, rel );
-				}
-				announce( used );
+				announce( calendar );
 			} )
 			.catch( function ( error ) {
 				if ( error && 'AbortError' === error.name ) {
@@ -114,30 +139,39 @@
 			} );
 	}
 
+	if ( ! calendars( document ).length ) {
+		return;
+	}
+
+	live = document.createElement( 'div' );
+	live.className = 'hestahub-live';
+	live.setAttribute( 'aria-live', 'polite' );
+	document.body.appendChild( live );
+
+	// So Back to the first months is a state this script restores, too.
+	window.history.replaceState( state(), '', window.location.href );
+
 	document.addEventListener( 'click', function ( event ) {
+		var link;
+		var calendar;
 		if ( event.defaultPrevented || 0 !== event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ) {
 			return;
 		}
-		var link = event.target.closest( LINK );
+		link = event.target.closest( LINK );
 		if ( ! link || link.origin !== window.location.origin || ( link.target && '_self' !== link.target ) ) {
 			return;
 		}
-		var calendar = link.closest( CALENDAR );
+		calendar = link.closest( CALENDAR );
 		if ( ! calendar ) {
 			return;
 		}
 		event.preventDefault();
-		swap( link.href, calendars( document ).indexOf( calendar ), link.getAttribute( 'rel' ), true );
+		swap( link.href, { index: calendars( document ).indexOf( calendar ), rel: link.getAttribute( 'rel' ) } );
 	} );
 
 	window.addEventListener( 'popstate', function ( event ) {
 		if ( event.state && event.state.hestahub ) {
-			swap( window.location.href, 0, null, false );
+			swap( window.location.href, null );
 		}
 	} );
-
-	// So Back to the first months is a state this script restores, too.
-	if ( calendars( document ).length ) {
-		window.history.replaceState( { hestahub: true }, '', window.location.href );
-	}
 }() );

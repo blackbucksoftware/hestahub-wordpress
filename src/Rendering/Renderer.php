@@ -156,7 +156,8 @@ final class Renderer implements Feature {
 
 	/**
 	 * A template rendered with these variables, as HTML. Enqueues the
-	 * stylesheet and the script, so a page that renders nothing of ours carries neither.
+	 * stylesheet and the script, so a page that renders nothing of ours
+	 * carries neither.
 	 *
 	 * @param string $template  A template name.
 	 * @param array  $variables What variables() returned for it.
@@ -240,8 +241,8 @@ final class Renderer implements Feature {
 	}
 
 	/**
-	 * Enqueues the stylesheet and the calendar script on a post that uses the shortcode.
-	 * Hooked to wp_enqueue_scripts.
+	 * Enqueues the stylesheet and the script on a post that uses the
+	 * shortcode. Hooked to wp_enqueue_scripts.
 	 */
 	public function enqueue_for_shortcode(): void {
 		// Early, so the styles are in the head; even if the shortcode then
@@ -253,16 +254,16 @@ final class Renderer implements Feature {
 	}
 
 	/**
-	 * Enqueues the plugin's structural stylesheet, in the head, and its optional
-	 * calendar script, deferred in the footer.
+	 * Enqueues the plugin's structural stylesheet, in the head, and its
+	 * optional script, deferred in the footer. The script only acts on a
+	 * page with a calendar: it pages the months in place. Without it, the
+	 * calendar's links reload the page, which the contract requires to work.
 	 */
 	public function enqueue(): void {
-		wp_enqueue_style( self::STYLE, plugins_url( 'assets/hestahub.css', $this->dir . '/hestahub.php' ), array(), Plugin::VERSION );
-		// Optional: pages the calendar in place. Without it, its links reload
-		// the page, as the contract requires them to work.
+		wp_enqueue_style( self::STYLE, $this->asset( 'hestahub.css' ), array(), Plugin::VERSION );
 		wp_enqueue_script(
 			self::SCRIPT,
-			plugins_url( 'assets/hestahub.js', $this->dir . '/hestahub.php' ),
+			$this->asset( 'hestahub.js' ),
 			array(),
 			Plugin::VERSION,
 			array(
@@ -270,6 +271,15 @@ final class Renderer implements Feature {
 				'strategy'  => 'defer',
 			)
 		);
+	}
+
+	/**
+	 * The URL of a file in the plugin's assets/.
+	 *
+	 * @param string $file The file's name.
+	 */
+	private function asset( string $file ): string {
+		return plugins_url( 'assets/' . $file, $this->dir . '/hestahub.php' );
 	}
 
 	/**

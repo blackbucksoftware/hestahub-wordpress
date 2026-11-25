@@ -64,7 +64,7 @@ final class RequestTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'hestahub-apartment-listing', $this->content() );
 	}
 
-	public function test_an_owned_route_gets_the_calendar_script() {
+	public function test_an_owned_route_gets_the_script() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 		$this->go_to( home_url( '/wohnungen/' ) );
 
