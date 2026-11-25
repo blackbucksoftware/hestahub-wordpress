@@ -33,6 +33,17 @@ Without data they show nothing.
 
 To change the markup, copy a template from the plugin's `templates/` folder into `hestahub/` in your (child) theme. The six templates render content only; your theme's header and footer surround them. Their variables are HestaHub's data exactly as received, documented in each template and in the contract. Helper functions such as `hestahub_amount()`, `hestahub_cleaning_fee()` and `hestahub_tier_label()` format amounts, fees and labels without computing a price; they are documented in the plugin's `src/functions.php`. The stylesheet sets no colours: set the `--hestahub-…` custom properties listed in `assets/hestahub.css`, at least the calendar's day states.
 
+On the base paths, the plugin prints the page around the content with `shell.php`: your theme's header, the content and your theme's footer. To give these pages your theme's layout, with columns or a sidebar, copy `shell.php` into `hestahub/` too. Your copy must call `get_header()`, `get_footer()` and, once, where the content belongs, `hestahub_content()`:
+
+    <?php get_header(); ?>
+    <div class="row">
+        <main class="col-md-8"><?php hestahub_content(); ?></main>
+        <?php get_sidebar(); ?>
+    </div>
+    <?php get_footer(); ?>
+
+If your copy never calls `hestahub_content()`, the content appears just before your footer, and WordPress reports the mistake when `WP_DEBUG` is on.
+
 == External services ==
 
 This plugin connects to the HestaHub Public Tenant API, a service run by HestaHub. It needs it to show your Apartments, availability and Clinics.

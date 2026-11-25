@@ -77,6 +77,9 @@ final class Routes implements Feature {
 	 */
 	private $resolved = null;
 
+	/** @var bool Whether this request's content has been printed. */
+	private $printed = false;
+
 	/**
 	 * @param Client        $client   The API client.
 	 * @param Renderer      $renderer Renders the plugin's templates.
@@ -105,6 +108,8 @@ final class Routes implements Feature {
 		add_filter( 'pre_handle_404', array( $this, 'pre_handle_404' ), 10, 2 );
 		add_action( 'template_redirect', array( $this, 'template_redirect' ), PHP_INT_MAX );
 		add_filter( 'template_include', array( $this, 'template_include' ) );
+		// Internal: fired by hestahub_content(), not a hook for themes or plugins.
+		add_action( 'hestahub_print_content', array( $this, 'print_content' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'wp_head', array( $this, 'canonical' ) );
 		add_filter( 'document_title_parts', array( $this, 'document_title_parts' ) );
@@ -258,13 +263,51 @@ final class Routes implements Feature {
 	}
 
 	/**
-	 * The plugin's page shell, which prints the theme's header and footer
-	 * around render_content().
+	 * The page shell, which prints the theme's header and footer around the
+	 * content: the theme's copy (child, then parent), else the plugin's.
+	 *
+	 * Side effect: for a theme's copy, it also hooks content_before_footer()
+	 * to get_footer, in case that copy never prints the content.
 	 *
 	 * @param string $template The template WordPress chose.
 	 */
 	public function template_include( $template ) {
-		return null === $this->current() ? $template : $this->dir . '/templates/shell.php';
+		if ( null === $this->current() ) {
+			return $template;
+		}
+		if ( $this->renderer->is_overridden( 'shell' ) ) {
+			add_action( 'get_footer', array( $this, 'content_before_footer' ), 0 );
+		}
+		return $this->renderer->locate( 'shell' );
+	}
+
+	/**
+	 * Prints the content once per request, where the shell calls
+	 * hestahub_content(): a second call prints nothing. Hooked to
+	 * hestahub_print_content.
+	 */
+	public function print_content(): void {
+		if ( ! $this->printed ) {
+			$this->render_content();
+		}
+	}
+
+	/**
+	 * Prints the content before the footer of a theme's shell that never
+	 * printed it, so a mistake never empties the page. Hooked to get_footer.
+	 */
+	public function content_before_footer(): void {
+		if ( $this->printed || null === $this->current() ) {
+			return;
+		}
+		_doing_it_wrong(
+			'hestahub_content',
+			esc_html__( 'The theme\'s hestahub/shell.php never calls hestahub_content(). The content is printed before the footer instead.', 'hestahub' ),
+			'1.1.0'
+		);
+		echo '<main class="hestahub-page">';
+		$this->render_content();
+		echo '</main>';
 	}
 
 	/**
@@ -278,6 +321,7 @@ final class Routes implements Feature {
 		if ( null === $resolved ) {
 			return;
 		}
+		$this->printed = true;
 		if ( self::FOUND !== $resolved['answer'] ) {
 			include $this->dir . '/templates/no-data/' . $resolved['answer'] . '.php';
 			return;

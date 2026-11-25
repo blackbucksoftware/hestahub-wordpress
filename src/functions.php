@@ -346,3 +346,20 @@ function hestahub_envelope(): array {
 		'fetched_at'         => null,
 	);
 }
+
+if ( ! function_exists( 'hestahub_content' ) ) {
+	/**
+	 * Prints the owned route's content, for a theme's copy of the page shell:
+	 * its template with HestaHub's data, or the plugin's own page when there
+	 * is no data. Prints nothing outside an owned route, and nothing on a
+	 * second call.
+	 *
+	 *     <?php get_header(); ?>
+	 *     <main class="col-md-8"><?php hestahub_content(); ?></main>
+	 *     <?php get_sidebar(); ?>
+	 *     <?php get_footer(); ?>
+	 */
+	function hestahub_content(): void {
+		do_action( 'hestahub_print_content' );
+	}
+}

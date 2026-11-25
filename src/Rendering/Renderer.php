@@ -213,6 +213,15 @@ final class Renderer implements Feature {
 	}
 
 	/**
+	 * Whether the theme (child or parent) has its own copy of a template.
+	 *
+	 * @param string $template A template name.
+	 */
+	public function is_overridden( string $template ): bool {
+		return '' !== locate_template( 'hestahub/' . $template . '.php' );
+	}
+
+	/**
 	 * [hestahub show="apartment-listing" slug="hoettur, katla"]
 	 *
 	 * @param array|string $atts The shortcode's attributes.
