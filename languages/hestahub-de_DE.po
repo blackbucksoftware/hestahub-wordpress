@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:53+0100\n"
+"POT-Creation-Date: 2026-11-25 12:56+0100\n"
 "PO-Revision-Date: 2026-11-23 00:00+0000\n"
 "Last-Translator: Blackbuck Software\n"
 "Language-Team: German\n"
@@ -292,6 +292,9 @@ msgstr "Anmeldung geschlossen"
 #, php-format
 msgid "%1$s, %2$s"
 msgstr "%1$s, %2$s"
+
+msgid "The theme's hestahub/shell.php never calls hestahub_content(). The content is printed before the footer instead."
+msgstr "Die hestahub/shell.php des Themes ruft hestahub_content() nie auf. Der Inhalt wird stattdessen vor dem Footer ausgegeben."
 
 #. translators: 1: Apartments or Clinics, 2: the base path, e.g. /apartments/.
 #, php-format

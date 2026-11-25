@@ -33,7 +33,7 @@ trait VisitsRoutes {
 		$wp_rewrite->extra_rules_top = array();
 		$this->headers               = array();
 		// A fresh request: no earlier request's Routes still hooked.
-		foreach ( array( 'parse_query', 'posts_pre_query', 'pre_handle_404', 'template_redirect', 'template_include', 'wp_enqueue_scripts', 'wp_head', 'document_title_parts', 'wpseo_canonical', 'wpseo_title' ) as $hook ) {
+		foreach ( array( 'parse_query', 'posts_pre_query', 'pre_handle_404', 'template_redirect', 'template_include', 'hestahub_content', 'get_footer', 'wp_enqueue_scripts', 'wp_head', 'document_title_parts', 'wpseo_canonical', 'wpseo_title' ) as $hook ) {
 			remove_all_filters( $hook );
 		}
 		$client = $this->client();

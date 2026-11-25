@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: HestaHub\n"
 "Report-Msgid-Bugs-To: https://github.com/blackbucksoftware/hestahub-wordpress/issues\n"
-"POT-Creation-Date: 2026-11-24 13:53+0100\n"
+"POT-Creation-Date: 2026-11-25 12:56+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -295,6 +295,9 @@ msgstr ""
 #. translators: 1: a date, 2: a time of day.
 #, php-format
 msgid "%1$s, %2$s"
+msgstr ""
+
+msgid "The theme's hestahub/shell.php never calls hestahub_content(). The content is printed before the footer instead."
 msgstr ""
 
 #. translators: 1: Apartments or Clinics, 2: the base path, e.g. /apartments/.
