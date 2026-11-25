@@ -18,7 +18,7 @@ The plugin is a **tolerant reader**: it reads field by field, ignores unknown ke
 - **Updates:** `Update URI` set from the first release; a vendored `plugin-update-checker` reads a static JSON manifest and a release zip on GitHub Releases. The whole update mechanism sits behind **one conditional**, so a wordpress.org build can strip it. Auto-updates stay off unless the webmaster turns them on.
 - **Releases:** CI builds the zip on a tag. Built files are never committed.
 - **Schemas:** vendored into this repo for the test suite. CI fails if the vendored copy differs from the published one for the Revision the plugin claims. The plugin declares the minimum Revision it was built against.
-- **Rendering:** structural CSS with no colour opinions, a few CSS custom properties, and PHP templates a theme overrides by copying them into `<theme>/hestahub/` (core's `locate_template()`). A shortcode and a template tag in v1; a block only once a Tenant runs a block theme.
+- **Rendering:** structural CSS with no colour opinions, a few CSS custom properties, and PHP templates a theme overrides by copying them into `<theme>/hestahub/` (core's `locate_template()`). A shortcode and a template tag in v1; a block only once a Tenant runs a block theme. One optional script, `assets/hestahub.js`, pages the calendar in place; everything must work without it (`docs/adr/0001`).
 - `readme.txt` in WordPress readme format from the first release, disclosing the external service and linking the contract.
 
 ## Commands

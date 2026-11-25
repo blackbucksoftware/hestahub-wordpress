@@ -64,6 +64,15 @@ final class RequestTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'hestahub-apartment-listing', $this->content() );
 	}
 
+	public function test_an_owned_route_gets_the_script() {
+		$this->respond( 200, $this->example( 'apartments' ) );
+		$this->go_to( home_url( '/wohnungen/' ) );
+
+		do_action( 'wp_enqueue_scripts' );
+
+		$this->assertTrue( wp_script_is( 'hestahub', 'enqueued' ) );
+	}
+
 	public function test_a_slug_in_the_current_data_answers_200_with_the_apartment_template() {
 		$this->respond( 200, $this->example( 'apartments' ) );
 		$this->respond( 200, $this->example( 'availability' ) ); // The page's calendar.

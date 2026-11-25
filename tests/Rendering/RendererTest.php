@@ -28,6 +28,7 @@ final class RendererTest extends WP_UnitTestCase {
 		$this->use_theme( 'hestahub-child' );
 		unset( $GLOBALS['hestahub_test_vars'] );
 		wp_dequeue_style( 'hestahub' );
+		wp_dequeue_script( 'hestahub' );
 	}
 
 	public function tear_down() {
@@ -201,6 +202,7 @@ final class RendererTest extends WP_UnitTestCase {
 		do_action( 'wp_enqueue_scripts' );
 
 		$this->assertFalse( wp_style_is( 'hestahub', 'enqueued' ) );
+		$this->assertFalse( wp_script_is( 'hestahub', 'enqueued' ) );
 	}
 
 	public function test_a_page_with_the_shortcode_gets_the_stylesheet_in_its_head() {
@@ -210,6 +212,20 @@ final class RendererTest extends WP_UnitTestCase {
 		do_action( 'wp_enqueue_scripts' );
 
 		$this->assertTrue( wp_style_is( 'hestahub', 'enqueued' ) );
+	}
+
+	public function test_a_page_with_the_shortcode_gets_the_script_deferred_in_its_footer() {
+		$post = self::factory()->post->create( array( 'post_content' => '[hestahub show="calendar" slug="hoettur"]' ) );
+		$this->go_to( get_permalink( $post ) );
+
+		do_action( 'wp_enqueue_scripts' );
+
+		$this->assertTrue( wp_script_is( 'hestahub', 'enqueued' ) );
+		$script = wp_scripts()->registered['hestahub'];
+		$this->assertStringEndsWith( '/assets/hestahub.js', $script->src );
+		$this->assertSame( array(), $script->deps, 'No jQuery.' );
+		$this->assertSame( 1, $script->extra['group'] ?? null, 'In the footer.' );
+		$this->assertSame( 'defer', $script->extra['strategy'] ?? null );
 	}
 
 	public function test_the_stylesheet_sets_no_colours() {

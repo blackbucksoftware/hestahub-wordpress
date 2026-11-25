@@ -330,7 +330,7 @@ final class Routes implements Feature {
 	}
 
 	/**
-	 * Enqueues the stylesheet in the head of an owned route. Hooked to
+	 * Enqueues the stylesheet and the script on an owned route. Hooked to
 	 * wp_enqueue_scripts.
 	 */
 	public function enqueue(): void {

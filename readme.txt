@@ -44,6 +44,8 @@ On the base paths, the plugin prints the page around the content with `shell.php
 
 If your copy never calls `hestahub_content()`, the content appears just before your footer, and WordPress reports the mistake when `WP_DEBUG` is on.
 
+A small script, `assets/hestahub.js`, pages the availability calendar without reloading the page. If you override `calendar.php`, keep the class `hestahub-calendar` on the outer element and `hestahub-calendar-nav` around the month links; without them, the links reload the page as they do without JavaScript.
+
 == External services ==
 
 This plugin connects to the HestaHub Public Tenant API, a service run by HestaHub. It needs it to show your Apartments, availability and Clinics.
