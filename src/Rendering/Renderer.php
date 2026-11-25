@@ -23,6 +23,7 @@ final class Renderer implements Feature {
 
 	const SHORTCODE = 'hestahub';
 	const STYLE     = 'hestahub';
+	const SCRIPT    = 'hestahub';
 
 	/**
 	 * The templates a theme may override: the endpoint each reads, the
@@ -155,7 +156,7 @@ final class Renderer implements Feature {
 
 	/**
 	 * A template rendered with these variables, as HTML. Enqueues the
-	 * stylesheet, so a page that renders nothing of ours carries none.
+	 * stylesheet and the script, so a page that renders nothing of ours carries neither.
 	 *
 	 * @param string $template  A template name.
 	 * @param array  $variables What variables() returned for it.
@@ -239,7 +240,7 @@ final class Renderer implements Feature {
 	}
 
 	/**
-	 * Enqueues the stylesheet in the head of a post that uses the shortcode.
+	 * Enqueues the stylesheet and the calendar script on a post that uses the shortcode.
 	 * Hooked to wp_enqueue_scripts.
 	 */
 	public function enqueue_for_shortcode(): void {
@@ -252,10 +253,23 @@ final class Renderer implements Feature {
 	}
 
 	/**
-	 * Enqueues the plugin's structural stylesheet.
+	 * Enqueues the plugin's structural stylesheet, in the head, and its optional
+	 * calendar script, deferred in the footer.
 	 */
 	public function enqueue(): void {
 		wp_enqueue_style( self::STYLE, plugins_url( 'assets/hestahub.css', $this->dir . '/hestahub.php' ), array(), Plugin::VERSION );
+		// Optional: pages the calendar in place. Without it, its links reload
+		// the page, as the contract requires them to work.
+		wp_enqueue_script(
+			self::SCRIPT,
+			plugins_url( 'assets/hestahub.js', $this->dir . '/hestahub.php' ),
+			array(),
+			Plugin::VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
 	}
 
 	/**

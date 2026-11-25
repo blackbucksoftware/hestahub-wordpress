@@ -15,6 +15,11 @@
  * hestahub_calendar() derives the months and day states; hestahub_as_of() the
  * "As of" ("Stand:") line, which is always shown, fresh or stale.
  *
+ * The plugin's script (assets/hestahub.js) pages the months in place. It
+ * needs the classes hestahub-calendar on the outer element and
+ * hestahub-calendar-nav around the month links; without them, the links
+ * reload the page, which works too.
+ *
  * @package HestaHub
  */
 
