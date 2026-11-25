@@ -4,7 +4,7 @@ Tags: apartments, availability, booking, holiday rental, clinics
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
@@ -58,6 +58,9 @@ Updates: unless installed from wordpress.org, the plugin also checks GitHub for 
 The contract: https://docs.hestahub.com/v1/
 
 == Changelog ==
+
+= 1.1.0 =
+* A theme can give the base paths its own layout, with columns or a sidebar: copy `shell.php` into `hestahub/` in your theme and call the new `hestahub_content()` where the content belongs. See "Your theme".
 
 = 1.0.1 =
 * No change to the plugin: release build fixed after the 1.0.0 build failed.
