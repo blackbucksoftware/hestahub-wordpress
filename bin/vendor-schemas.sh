@@ -6,7 +6,9 @@
 #
 #   revision   defaults to Client::REVISION in src/Api/Client.php.
 #   --check    downloads the published files and fails if the vendored
-#              copy differs from them. CI runs this.
+#              schemas differ from them. CI runs this. Examples are not
+#              compared: the contract says they promise nothing, and they
+#              change whenever HestaHub regenerates them.
 
 set -euo pipefail
 
@@ -42,11 +44,11 @@ done
 echo "$REVISION" > "$TMP/REVISION"
 
 if [ "$CHECK" = 1 ]; then
-	if ! diff -ru "$DEST" "$TMP"; then
-		echo "tests/fixtures/api/ differs from the published Revision $REVISION. Run bin/vendor-schemas.sh $REVISION." >&2
+	if ! diff -ru -x '*.example.json' "$DEST" "$TMP"; then
+		echo "The schemas in tests/fixtures/api/ differ from the published Revision $REVISION. Run bin/vendor-schemas.sh $REVISION." >&2
 		exit 1
 	fi
-	echo "tests/fixtures/api/ matches the published Revision $REVISION."
+	echo "The schemas in tests/fixtures/api/ match the published Revision $REVISION."
 	exit 0
 fi
 
